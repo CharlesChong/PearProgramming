@@ -4,7 +4,7 @@ package server
 type server struct {
 }
 
-func NewServer() (Server, error) {
+func NewServer(masterServerHostPort string, numNodes, port int, nodeID uint32) (Server, error) {
 	ps := server{}
 	return &ps, nil
 }
