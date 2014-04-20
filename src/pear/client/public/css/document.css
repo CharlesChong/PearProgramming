@@ -1,0 +1,15 @@
+#editor{
+    position:fixed;
+    top:0px;
+    bottom:0px;
+    left:0px;
+    right:0px;
+}
+#sidePanel{
+}
+#openSidePanelButton {
+    background:white;
+    position:fixed;
+    right:10px;
+    top:10px;
+}
