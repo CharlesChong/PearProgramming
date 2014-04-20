@@ -11,7 +11,6 @@ const defaultPort = "8080";
 
 func main() {
     http.HandleFunc("/getServers", getServers)
-    http.Handle("/", http.FileServer(http.Dir("client")))
 
     fmt.Println("Launching central server on " + defaultPort + "...")
     log.Fatal(http.ListenAndServe(":" + defaultPort, nil))
