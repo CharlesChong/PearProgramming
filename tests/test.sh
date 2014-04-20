@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 if [ -z $GOPATH ]; then
     echo "FAIL: GOPATH environment variable is not set"
     exit 1
@@ -24,12 +25,13 @@ fi
 
 # Pick random ports between [10000, 20000).
 STORAGE_PORT=$(((RANDOM % 10000) + 10000))
-LIB_PORT=$(((RANDOM % 10000) + 10000))
-STORAGE_SERVER=$GOPATH/sols/$GOOS/srunner
-LIB_TEST=$GOPATH/bin/libtest
+# LIB_PORT=$(((RANDOM % 10000) + 10000))
+STORAGE_SERVER=$GOPATH/pkg/$GOOS/pear/server.a
+#STORAGE_SERVER=$GOPATH/sols/$GOOS/srunner
+# LIB_TEST=$GOPATH/bin/libtest
 
 # Start an instance of the staff's official storage server implementation.
-${STORAGE_SERVER} -port=${STORAGE_PORT} 2> /dev/null &
+${STORAGE_SERVER} -port=${STORAGE_PORT} 2 #> /dev/null &
 STORAGE_SERVER_PID=$!
 sleep 5
 
