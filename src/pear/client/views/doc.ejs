@@ -2,55 +2,22 @@
 <html lang="en">
 <head>
     <title><%= docname %></title>
-    <link rel="stylesheet" type="text/css" href="/css/jquery.pageslide.css" />
+    <link rel="stylesheet" type="text/css" href="/css/jquery.pageslide.css"/>
+    <link rel="stylesheet" type="text/css" href="/css/document.css"/>
     <script src="/js/lib/jquery-2.1.0.min.js"></script>
-        <script>
-    $(function() {
-        $(".second").pageslide({ direction: "left", modal: true });
-    });
-    </script>
-
-    <style>
-    
-        body { 
-            background: #f4f4f4;
-            font: 14px/18px "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
-            color: #666; 
-            -webkit-font-smoothing: antialiased; /* Fix for webkit rendering */
-            -webkit-text-size-adjust: none;
-        }
-
-        a, a:visited { color: #C30; text-decoration: none; border-bottom: 1px dotted #C30; }
-        a:hover { color: #900; border-bottom-style: solid; }
-
-        p { margin-bottom: 20px; }
-
-        #content {
-            width: 940px;
-            padding: 10px;
-            margin: 0 auto;
-        }
-            #content h1 { color: #333; line-height: 1em; }
-            #content ul { padding-left: 0; list-style: none; }
-                #content ul li { margin-bottom: 20px; }
-
-        #modal { display: none; }
-            #modal a { background: #CCC; color: #333; font-weight: bold; padding: 5px 10px; border: none; }
-            #modal a:hover { background: #aaa; } 
-
-        pre { border: 1px solid #CCC; background-color: #EEE; color: #333; padding: 10px 20px; }
-        
-    </style>
+    <script src="/js/lib/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/js/document.js"></script>
 </head>
 <body>
-<div id="content">
-                <a href="#modal" class="second">Slide to the left, and display hidden content from this page in a modal pane.</a>
-        <div id="modal">
-            <h2>Modal</h2>
-            <p>This slide uses "modal" option set to "true". When using a modal pageslide, clicking on the main window will not close the window. You must explicitly call <code>$.pageslide.close()</code>.</p>
-            <p><a href="javascript:$.pageslide.close()">Close</a></p>
-        </div>
-        </div>
+    <div id="editor">
+
+    </div>
+    <div href="#sidePanel" id="openSidePanelButton">X</a>
+    <div id="sidePanel" style="display:none">
+        <h2>Modal</h2>
+        <p>This slide uses "modal" option set to "true". When using a modal pageslide, clicking on the main window will not close the window. You must explicitly call <code>$.pageslide.close()</code>.</p>
+        <p><a href="javascript:$.pageslide.close()">Close</a></p>
+    </div>
     <script src="/js/lib/jquery.pageslide.min.js"></script>
 </body>
 </html>
