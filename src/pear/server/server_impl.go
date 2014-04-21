@@ -2,6 +2,7 @@ package server
 
 import (
 	"pear/rpc/serverrpc"
+	"pear/rpc/centralrpc"
 	"net/rpc"
 	"net/http"
 	"net"
@@ -11,23 +12,20 @@ import (
 )
 
 type server struct {
-	servers              map[serverrpc.Node]bool
-	serverList           []serverrpc.Node
-	masterServerHostPort string
-	numNodes             int
+	centralHostPort 	 string
 	port                 int
-	nodeID               uint32 // Upper bound hash range
+	// map[client] document
+	// map[document] client
+	// map[server] conn
+	// map[document] server_list
 }
 
-func NewServer(masterServerHostPort string, numNodes, port int, nodeID uint32) (Server, error) {
+func NewServer(centralHostPort string,port int) (Server, error) {
+	common.LOGV.Println("Pear Server starting")
 	ps := server{}
-	ps.servers = make(map[serverrpc.Node]bool)
-	ps.serverList = []serverrpc.Node{}
-	ps.masterServerHostPort = masterServerHostPort
-	ps.numNodes = numNodes
+	ps.centralHostPort = centralHostPort
 	ps.port = port
-	ps.nodeID = nodeID
-	common.LOGV.Println("Pear Server startin")
+	
 	myHostPort := fmt.Sprintf("localhost:%d", port)
 
 	// Create the server socket that will listen for incoming RPCs.
@@ -37,7 +35,7 @@ func NewServer(masterServerHostPort string, numNodes, port int, nodeID uint32) (
 	}
 
 	// Wrap the tribServer before registering it for RPC.
-	err = rpc.RegisterName("PearServer", serverrpc.Wrap(ps))
+	err = rpc.RegisterName("PearServer", serverrpc.Wrap(&ps))
 	if err != nil {
 		return nil, err
 	}
@@ -47,13 +45,8 @@ func NewServer(masterServerHostPort string, numNodes, port int, nodeID uint32) (
 	rpc.HandleHTTP()
 	go http.Serve(listener, nil)
 
-	// Start with 1 coordinator and register all machines
-	// After complete respond with all servers
-	if len(masterServerHostPort) == 0 {
-		err = coordinatorInit(&ps, myHostPort)
-	} else {
-		err = participantInit(&ps, myHostPort)
-	}
+	// err = coordinatorInit(&ps, myHostPort)
+	err = participantInit(&ps, myHostPort)
 	if err != nil {
 		common.LOGE.Println(err)
 		return nil, err
@@ -63,15 +56,15 @@ func NewServer(masterServerHostPort string, numNodes, port int, nodeID uint32) (
 }
 
 func participantInit(ps *server, myHostPort string) error {
-	common.LOGV.Println("participant Init:", ps.nodeID, ps.port)
+	common.LOGV.Println("Participant Init:", ps.port)
 	var client *rpc.Client
 	var err error
 
 	maxFail := 5
 	for tries := 0; tries < maxFail; tries++ {
-		client, err = rpc.DialHTTP("tcp", ps.masterServerHostPort)
+		client, err = rpc.DialHTTP("tcp", ps.centralHostPort)
 		if err != nil {
-			common.LOGE.Printf("dialing:", err)
+			common.LOGE.Printf("Dialing:", err)
 			if tries >= maxFail {
 				return err
 			}
@@ -81,19 +74,21 @@ func participantInit(ps *server, myHostPort string) error {
 		}
 	}
 
+	common.LOGV.Println("Connection Made")
+
 	for {
 		// Make RPC Call to Master
-		srvInfo := serverrpc.Node{HostPort: myHostPort,
-			NodeID: ps.nodeID}
-		args := &serverrpc.RegisterArgs{ServerInfo: srvInfo}
-		var reply serverrpc.RegisterReply
-		if err := client.Call("PearServer.RegisterParticipant", args, &reply); err != nil {
+		args := &centralrpc.AddServerArgs{
+					HostPort: myHostPort,
+				}
+		var reply centralrpc.AddServerReply
+		if err := client.Call("PearCentral.AddServer", args, &reply); err != nil {
 			return err
 		}
 
 		// Check reply from Master
-		if reply.Status == serverrpc.OK {
-			// findHashRange(ss)
+		if reply.Status == centralrpc.OK {
+			common.LOGV.Println("Registered")
 			return nil
 		}
 
@@ -101,51 +96,24 @@ func participantInit(ps *server, myHostPort string) error {
 	}
 }
 
-func coordinatorInit(ps *server, myHostPort string) error {
-
-	// Register Coordinator into Servers
-	srvInfo := serverrpc.Node{HostPort: myHostPort, NodeID: ps.nodeID}
-	ps.servers[srvInfo] = true
-	ps.serverList = append(ps.serverList, srvInfo)
-
-	// Sleep until all servers are done
-	for len(ps.servers) < ps.numNodes {
-		time.Sleep(time.Second)
-	}
-
-	common.LOGV.Println("Ring Initialization Complete")
-
-	// findHashRange(ss)
-
+func (ps *server) AddedDoc(args *serverrpc.AddedDocArgs,reply *serverrpc.AddedDocReply) error {
+	
 	return nil
-
 }
 
-func (ps server) RegisterParticipant(args *serverrpc.RegisterArgs,reply *serverrpc.RegisterReply) error {
-	common.LOGV.Println("Register Server ", args.ServerInfo.NodeID)
-
-	ps.servers[args.ServerInfo] = true
-
-	if len(ps.servers) == ps.numNodes {
-		// All Servers complete, compile list
-		reply.Status = serverrpc.OK
-		for k, _ := range ps.servers {
-			if k.NodeID != ps.nodeID {
-				ps.serverList = append(ps.serverList, k)
-			}
-		}
-		reply.Servers = ps.serverList
-		common.LOGV.Println("READY BABE")
-
-	} else {
-		reply.Status = serverrpc.NotReady
-		reply.Servers = []serverrpc.Node{}
-	}
+func (ps *server) RemovedDoc(args *serverrpc.RemovedDocArgs,reply *serverrpc.RemovedDocReply) error {
 
 	return nil
 }
 
-func (ps server) VotePhase(args *serverrpc.VoteArgs, reply *serverrpc.VoteReply) error {
+func (ps *server) GetDoc(args *serverrpc.GetDocArgs,reply *serverrpc.GetDocReply) error {
+	reply.DocId = args.DocId
+	reply.Doc = "Fake Doc"
+	reply.Status = serverrpc.OK
+	return nil
+}
+
+func (ps *server) VotePhase(args *serverrpc.VoteArgs, reply *serverrpc.VoteReply) error {
 	fmt.Println("Vote: ",args.Msg)
 	reply.Vote = true
 	reply.Msg = args.Msg
@@ -153,7 +121,7 @@ func (ps server) VotePhase(args *serverrpc.VoteArgs, reply *serverrpc.VoteReply)
 	return nil
 }
 
-func (ps server) CompletePhase(args *serverrpc.CompleteArgs, reply *serverrpc.CompleteReply) error {
+func (ps *server) CompletePhase(args *serverrpc.CompleteArgs, reply *serverrpc.CompleteReply) error {
 	fmt.Println("Cmp: ",args.Msg," rollback?",args.Rollback)
 	reply.Msg = args.Msg
 	fmt.Println("Cmp Rsp ",reply.Msg)

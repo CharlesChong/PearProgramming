@@ -1,52 +1,35 @@
 package main
 
 import (
-	crand "crypto/rand"
 	"flag"
 	"log"
-	"math"
-	"math/big"
-	"math/rand"
 	"strconv"
 	"fmt"
 	"pear/server"
 	"code.google.com/p/go.net/websocket"
 	"net/http"
 )
-
-const defaultMasterPort = 9000
+const defaultPort = 9000
+const defaultCentralPort = "localhost:3000"
 
 var (
-	port           = flag.Int("port", defaultMasterPort, "port number to listen on")
-	masterHostPort = flag.String("master", "", "master storage server host port (if non-empty then this storage server is a slave)")
-	numNodes       = flag.Int("N", 1, "the number of nodes in the ring (including the master)")
+	myPort           = flag.Int("port", defaultPort, "port number to listen on")
+	centralHostPort = flag.String("central", defaultCentralPort, "central storage server host port (if non-empty then this storage server is a slave)")
 	nodeID         = flag.Uint("id", 0, "a 32-bit unsigned node ID to use for consistent hashing")
 )
 
 func main() {
 	fmt.Println("PearServer Running....")
 	flag.Parse()
-	if *masterHostPort == "" && *port == 0 {
-		// If masterHostPort string is empty, then this storage server is the master.
-		*port = defaultMasterPort
-	}
-
-	// If nodeID is 0, then assign a random 32-bit integer instead.
-	randID := uint32(*nodeID)
-	if randID == 0 {
-		randint, _ := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
-		rand.Seed(randint.Int64())
-		randID = rand.Uint32()
-	}
 
 	// Create and start the StorageServer.
-	_, err := server.NewServer(*masterHostPort, *numNodes, *port, randID)
+	_, err := server.NewServer(*centralHostPort, *myPort)
 	if err != nil {
 		log.Fatalln("Failed to create storage server:", err)
 	}
 
 	http.Handle("/", websocket.Handler(server.ClientHandler))
-	log.Fatal(http.ListenAndServe(":" + strconv.Itoa(*port), nil))
+	log.Fatal(http.ListenAndServe(":" + strconv.Itoa(*myPort), nil))
 
 	// Run the storage server forever.
 	// select {}

@@ -1,4 +1,3 @@
-
 package serverrpc
 
 // Status represents the status of a RPC's reply.
@@ -9,20 +8,38 @@ const (
 	NotReady                       // The storage servers are still getting ready.
 )
 
+type DocId string
+type Doc string
 type Message string
 
-type Node struct {
-	HostPort string // The host:port address of the storage server node.
-	NodeID   uint32 // The ID identifying this storage server node.
+type AddedDocArgs struct {
+	DocId		DocId
+	HostPort	string
 }
 
-type RegisterArgs struct {
-	ServerInfo Node
-}
-
-type RegisterReply struct {
+type AddedDocReply struct {
+	DocId   DocId
 	Status  Status
-	Servers []Node
+}
+
+type RemovedDocArgs struct {
+	DocId   	DocId
+	HostPort	string
+}
+
+type RemovedDocReply struct {
+	DocId   DocId
+	Status  Status
+}
+
+type GetDocArgs struct {
+	DocId   DocId
+}
+
+type GetDocReply struct {
+	Doc     Doc
+	DocId   DocId
+	Status  Status
 }
 
 type VoteArgs struct {

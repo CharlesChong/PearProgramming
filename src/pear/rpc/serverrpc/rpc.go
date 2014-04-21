@@ -3,7 +3,9 @@ package serverrpc
 type RemoteServer interface {
 	VotePhase(*VoteArgs,*VoteReply) error
 	CompletePhase(*CompleteArgs,*CompleteReply) error
-	RegisterParticipant(*RegisterArgs,*RegisterReply) error
+	AddedDoc(*AddedDocArgs,*AddedDocReply) error
+	RemovedDoc(*RemovedDocArgs,*RemovedDocReply) error
+	GetDoc(*GetDocArgs,*GetDocReply) error
 }
 
 type Server struct {
