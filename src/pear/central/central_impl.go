@@ -8,6 +8,8 @@ import (
 	"common"
 	// "time"
 	// "errors"
+	"strconv"
+	"log"
 	"fmt"
 )
 
@@ -45,6 +47,9 @@ func NewCentral(port int) (Central, error) {
 	rpc.HandleHTTP()
 	go http.Serve(listener, nil)
 
+    http.HandleFunc("/", c.NewClient)
+    log.Fatal(http.ListenAndServe(":" + strconv.Itoa(port), nil))
+
 	return &c, nil
 }
 
@@ -71,11 +76,13 @@ func (c *central) AddServer(args *centralrpc.AddServerArgs,reply *centralrpc.Add
 	return nil
 }
 
-func NewClient(w http.ResponseWriter, r *http.Request) {
+func (c *central) NewClient(w http.ResponseWriter, r *http.Request) {
     r.ParseForm()
     if (r.Form["docId"] != nil) && (len(r.Form["docId"]) > 0) {
         // var docId = r.Form["docId"][0]
         // $TODO: Actually return something meaningful
-        fmt.Fprintf(w, "localhost:9000")
+        fmt.Fprintf(w, strconv.Itoa(c.clientIdCnt) +" localhost:9000")
+        // $TODO: Race condition here
+        c.clientIdCnt++
     }
 }

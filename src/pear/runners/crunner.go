@@ -4,8 +4,6 @@ import (
     "fmt"
     "flag"
     "log"
-    "strconv"
-    "net/http"
     "pear/central"
 )
 
@@ -24,9 +22,4 @@ func main() {
 	if err != nil {
 		log.Fatalln("Failed to create storage server:", err)
 	}
-    http.HandleFunc("/", central.NewClient)
-
-    fmt.Println("Launching central server on ", defaultPort , "...")
-    defaultPortStr := ":" + strconv.Itoa(defaultPort)
-    log.Fatal(http.ListenAndServe(defaultPortStr, nil))
 }
