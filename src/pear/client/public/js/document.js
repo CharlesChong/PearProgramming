@@ -12,7 +12,6 @@ $(function(){
             },
             progress: function(){
                 editor.resize();
-                console.log("RAWR")
             }
         });
     });
@@ -28,4 +27,5 @@ $(function(){
             }
         });
     });
+    $("#openSidePanelButton").click()
 });

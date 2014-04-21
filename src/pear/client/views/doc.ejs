@@ -1,23 +1,25 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title><%= docname %></title>
+    <title><%= docId %> - Pear Programming</title>
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css"/>
     <link rel="stylesheet" type="text/css" href="/css/jquery.pageslide.css"/>
     <link rel="stylesheet" type="text/css" href="/css/document.css"/>
     <script src="/js/lib/jquery-2.1.0.min.js"></script>
     <script src="/js/lib/ace/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="/js/document.js"></script>
+    <script>
+        // set global variables
+        var docId = "<%= docId %>";
+        var centralHostPort = "<%= centralHostPort %>";
+    </script>
 </head>
 <body>
-    <div id="editor">
-
-    </div>
-    <div id="openSidePanelButton">X</div>
+    <div id="editor"></div>
+    <span id="openSidePanelButton" class="btn btn-warning">&#10010;</span>
     <div id="sidePanel" style="display:none">
-        <div id="closeSidePanelButton">X</div>
-        <h2>Modal</h2>
-        <p>This slide uses "modal" option set to "true". When using a modal pageslide, clicking on the main window will not close the window. You must explicitly call <code>$.pageslide.close()</code>.</p>
-        <p><a href="javascript:$.pageslide.close()">Close</a></p>
+        <span id="closeSidePanelButton" class="btn btn-warning">&#10006</span>
+        <h1><%= docId %></h1>
     </div>
     <script src="/js/lib/jquery.pageslide.min.js"></script>
 </body>

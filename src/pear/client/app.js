@@ -10,7 +10,7 @@ var express = require('express')
 var app = express();
 
 // all environments
-app.set('port', process.env.PORT || 3000);
+app.set('port', process.env.PORT || 80);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(express.favicon());
@@ -28,8 +28,9 @@ if ('development' == app.get('env')) {
 app.get('/', function(req, res){
     res.render('index');
 });
-app.get('/doc/:docname', function(req, res){
-    res.render('doc', { docname: req.params.docname})
+app.get('/:docId', function(req, res){
+    var centralHostPort = process.argv[2] ? process.argv[2] : "localhost:3000";
+    res.render('doc', { docId: req.params.docId, centralHostPort: centralHostPort})
 })
 
 
