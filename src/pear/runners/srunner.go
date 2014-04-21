@@ -7,11 +7,14 @@ import (
 	"math"
 	"math/big"
 	"math/rand"
+	"strconv"
 	"fmt"
 	"pear/server"
+	"code.google.com/p/go.net/websocket"
+	"net/http"
 )
 
-const defaultMasterPort = 9009
+const defaultMasterPort = 9000
 
 var (
 	port           = flag.Int("port", defaultMasterPort, "port number to listen on")
@@ -41,6 +44,9 @@ func main() {
 	if err != nil {
 		log.Fatalln("Failed to create storage server:", err)
 	}
+
+	http.Handle("/", websocket.Handler(server.ClientHandler))
+	log.Fatal(http.ListenAndServe(":" + strconv.Itoa(*port), nil))
 
 	// Run the storage server forever.
 	// select {}

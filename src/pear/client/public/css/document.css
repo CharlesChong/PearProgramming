@@ -8,8 +8,19 @@
 #sidePanel{
 }
 #openSidePanelButton {
-    background:white;
+    padding:5px;
     position:fixed;
     right:10px;
     top:10px;
+    height:32px;
+    width:32px;
+}
+
+#closeSidePanelButton {
+    padding:5px;
+    position:absolute;
+    right:10px;
+    top:10px;
+    height:32px;
+    width:32px;
 }
