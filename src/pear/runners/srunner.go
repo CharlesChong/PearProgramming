@@ -11,7 +11,7 @@ import (
 	"pear/server"
 )
 
-const defaultMasterPort = 9009
+const defaultMasterPort = 9000
 
 var (
 	port           = flag.Int("port", defaultMasterPort, "port number to listen on")

@@ -1,4 +1,15 @@
-$(function(){   
+$(function(){
+    $.get("http://" + centralHostPort, {docId: docId})
+        .done(function(data) {
+            alert(data)
+        }).fail(function(data) {
+            alert("Failed to retrieve server information");
+            console.log(data)
+        });
+    setupGUI();
+});
+
+function setupGUI() {
     var editor = ace.edit("editor");
     editor.setTheme("ace/theme/cobalt");
     editor.getSession().setMode("ace/mode/javascript");
@@ -23,9 +34,8 @@ $(function(){
             },
             progress: function(){
                 editor.resize();
-                console.log("RAWR")
             }
         });
     });
     $("#openSidePanelButton").click()
-});
+}
