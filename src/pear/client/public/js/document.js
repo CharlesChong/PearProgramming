@@ -1,10 +1,11 @@
+var ws;
 $(function(){
     $.get("http://" + centralHostPort, {docId: docId})
         .done(function(data) {
-            alert(data)
+            setupServer(data);
         }).fail(function(data) {
             alert("Failed to retrieve server information");
-            console.log(data)
+            console.log(data);
         });
     setupGUI();
 });
@@ -14,6 +15,7 @@ function setupGUI() {
     editor.setTheme("ace/theme/cobalt");
     editor.getSession().setMode("ace/mode/javascript");
     editor.getSession().setUseWrapMode(true);
+    editor.getSession().on('change', editorChange);
 
     $("#openSidePanelButton").click(function(){
         $("#editor").animate({right:"300px"}, {
@@ -38,4 +40,19 @@ function setupGUI() {
         });
     });
     $("#openSidePanelButton").click()
+}
+
+function setupServer(serverHostPort) {
+    ws = new WebSocket("ws://" + serverHostPort);
+    ws.onmessage = serverHandler;
+}
+
+function serverHandler(e) {
+    console.log(event.data)
+    console.log("Received: " + e.data);
+    console.log(e)
+}
+
+function editorChange(e) {
+    ws.send(e.data.text);
 }
