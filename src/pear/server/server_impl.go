@@ -28,7 +28,7 @@ func NewServer(masterServerHostPort string, numNodes, port int, nodeID uint32) (
 	ps.numNodes = numNodes
 	ps.port = port
 	ps.nodeID = nodeID
-	fmt.Println("Pear Server startin")
+	common.LOGV.Println("Pear Server startin")
 	myHostPort := fmt.Sprintf("localhost:%d", port)
 
 	// Create the server socket that will listen for incoming RPCs.
@@ -114,6 +114,8 @@ func coordinatorInit(ps *server, myHostPort string) error {
 		time.Sleep(time.Second)
 	}
 
+	common.LOGV.Println("Ring Initialization Complete")
+
 	// findHashRange(ss)
 
 	return nil
@@ -134,6 +136,8 @@ func (ps server) RegisterParticipant(args *serverrpc.RegisterArgs,reply *serverr
 			}
 		}
 		reply.Servers = ps.serverList
+		common.LOGV.Println("READY BABE")
+
 	} else {
 		reply.Status = serverrpc.NotReady
 		reply.Servers = []serverrpc.Node{}

@@ -36,7 +36,7 @@ STORAGE_SERVER_PID=$!
 sleep 5
 
 # Start the test.
-${LIB_TEST} -port=${LIB_PORT} "localhost:${STORAGE_PORT}"
+# ${LIB_TEST} -port=${LIB_PORT} "localhost:${STORAGE_PORT}"
 
 # Kill the storage server.
 kill -9 ${STORAGE_SERVER_PID}
