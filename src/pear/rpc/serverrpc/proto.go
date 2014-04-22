@@ -11,39 +11,36 @@ const (
 	InvalidServer
 )
 
-type DocId string
-type Doc string
 type Message string
-type ServerId string
 
 type AddedDocArgs struct {
-	DocId    DocId
-	HostPort ServerId
+	DocId    string
+	HostPort string
 }
 
 type AddedDocReply struct {
-	DocId     DocId
-	Teammates map[ServerId]bool
+	DocId     string
+	Teammates map[string]bool
 	Status    Status
 }
 
 type RemovedDocArgs struct {
-	DocId    DocId
-	HostPort ServerId
+	DocId    string
+	HostPort string
 }
 
 type RemovedDocReply struct {
-	DocId  DocId
-	Status Status
+	DocId  	string
+	Status 	Status
 }
 
 type GetDocArgs struct {
-	DocId DocId
+	DocId 	string
 }
 
 type GetDocReply struct {
-	Doc    Doc
-	DocId  DocId
+	Doc    string
+	DocId  string
 	Status Status
 }
 
