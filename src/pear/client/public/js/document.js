@@ -1,5 +1,7 @@
 var ws;
 var clientId;
+var editor;
+
 $(function(){
     $.get("http://" + centralHostPort, {docId: docId})
         .done(function(data) {
@@ -14,8 +16,8 @@ $(function(){
 });
 
 function setupGUI() {
-    var editor = ace.edit("editor");
-    editor.setTheme("ace/theme/cobalt");
+    editor = ace.edit("editor");
+    editor.setTheme("ace/theme/solarized_dark");
     editor.getSession().setMode("ace/mode/javascript");
     editor.getSession().setUseWrapMode(true);
     editor.getSession().on('change', editorChange);
@@ -51,14 +53,21 @@ function setupServer(serverHostPort) {
         ws.send(clientId+"");
         ws.send(docId);
         ws.onmessage = function(e) {
-            editor.setValue(e.data.text);
-            ws.onmessage = serverHandler;
+            editor.setValue(e.data);
+           ws.onmessage = serverHandler;
         }
     }
 }
 
 function serverHandler(e) {
-    console.log(event.data)
+    var msg = e.data
+    if (msg.length < 10) {
+        console.log("Received an improper command")
+        return
+    }
+    var command = msg.substr(0, 10);
+    var args = msg.substring(10, msg.length);
+    console.log(command + ":" + args);
 }
 
 function editorChange(e) {

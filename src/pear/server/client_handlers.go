@@ -3,28 +3,32 @@ package server
 import (
     "code.google.com/p/go.net/websocket"
     "common"
+    "io"
 )
 
 type client struct {
-    DocId int
+    clientId string
+    docId string
     ws    *websocket.Conn
 }
 
 func (ps *server) ClientHandler(ws *websocket.Conn) {
-    var clientId string
-    err := websocket.Message.Receive(ws, &clientId)
-    common.LOGV.Println(clientId)
+    var c = client{}
+    c.ws = ws
+    err := websocket.Message.Receive(ws, &c.clientId)
     /*if err == io.EOF {
         return
-    } else */if err != nil {
-        common.LOGE.Println("Websocket error: " + err.Error())
-        return
+    } else */if err == nil {
+        err = websocket.Message.Receive(ws, &c.docId)
     }
-    var docId string
-    err = websocket.Message.Receive(ws, &docId)
+    if err == nil {
+        // $TODO: Get text for doc
+        err = websocket.Message.Send(ws, "This is the text for " + c.docId)
+    }    
     if err != nil {
-        common.LOGE.Println("Websocket error: " + err.Error())
+        common.LOGE.Println("Websocket error during setup: " + err.Error())
         return
     }
-    common.LOGV.Println(docId)
+
+    io.Copy(ws, ws)
 }
