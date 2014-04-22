@@ -6,25 +6,30 @@ type Status int
 const (
 	OK           Status = iota + 1 // The RPC was a success.
 	NotReady                       // The storage servers are still getting ready.
+	DocExist
+	DocNotExist
+	InvalidServer
 )
 
 type DocId string
 type Doc string
 type Message string
+type ServerId string
 
 type AddedDocArgs struct {
 	DocId		DocId
-	HostPort	string
+	HostPort	ServerId
 }
 
 type AddedDocReply struct {
 	DocId   DocId
+	Teammates map[ServerId]bool
 	Status  Status
 }
 
 type RemovedDocArgs struct {
 	DocId   	DocId
-	HostPort	string
+	HostPort	ServerId
 }
 
 type RemovedDocReply struct {

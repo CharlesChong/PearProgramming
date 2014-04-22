@@ -14,10 +14,10 @@ import (
 type server struct {
 	centralHostPort 	 string
 	port                 int
-	// map[client] document
-	// map[document] client
-	// map[server] conn
-	// map[document] server_list
+	clientToDocMap 		map[int]serverrpc.DocId // clientID to doc
+	docToClientMap		map[serverrpc.DocId]int
+	connMap				map[serverrpc.ServerId]*net.Conn 
+	docToServerMap		map[serverrpc.DocId]map[serverrpc.ServerId]bool
 }
 
 func NewServer(centralHostPort string,port int) (Server, error) {
@@ -25,6 +25,10 @@ func NewServer(centralHostPort string,port int) (Server, error) {
 	ps := server{}
 	ps.centralHostPort = centralHostPort
 	ps.port = port
+	ps.clientToDocMap = make(map[int]serverrpc.DocId)
+	ps.docToClientMap = make(map[serverrpc.DocId]int)
+	ps.connMap = make(map[serverrpc.ServerId]*net.Conn)
+	ps.docToServerMap = make(map[serverrpc.DocId]map[serverrpc.ServerId]bool)
 	
 	myHostPort := fmt.Sprintf("localhost:%d", port)
 
@@ -61,10 +65,10 @@ func participantInit(ps *server, myHostPort string) error {
 	var err error
 
 	maxFail := 5
-	for tries := 0; tries < maxFail; tries++ {
+	for tries := 0; ; tries++ {
 		client, err = rpc.DialHTTP("tcp", ps.centralHostPort)
 		if err != nil {
-			common.LOGE.Printf("Dialing:", err)
+			common.LOGE.Println("Try:", tries)
 			if tries >= maxFail {
 				return err
 			}
@@ -97,11 +101,42 @@ func participantInit(ps *server, myHostPort string) error {
 }
 
 func (ps *server) AddedDoc(args *serverrpc.AddedDocArgs,reply *serverrpc.AddedDocReply) error {
+	reply.DocId = args.DocId
+	reply.Teammates = make(map[serverrpc.ServerId]bool)
+	reply.Status = serverrpc.OK
 	
+	serverMap, ok := ps.docToServerMap[args.DocId]
+	if !ok {
+		newMap := make(map[serverrpc.ServerId]bool)
+		newMap[args.HostPort] = true
+		ps.docToServerMap[args.DocId] = newMap
+		reply.Teammates = newMap
+	} else {
+		_, ok2 := serverMap[args.HostPort]
+		if !ok2{
+			serverMap[args.HostPort] = true
+			ps.docToServerMap[args.DocId] = serverMap
+		} else {
+			reply.Status = serverrpc.DocExist
+		}
+	}
 	return nil
 }
 
 func (ps *server) RemovedDoc(args *serverrpc.RemovedDocArgs,reply *serverrpc.RemovedDocReply) error {
+	reply.DocId = args.DocId
+	reply.Status = serverrpc.OK
+	
+	serverMap,ok := ps.docToServerMap[args.DocId]
+	if ok {
+		_, ok2 := serverMap[args.HostPort]
+		if ok2{
+			delete(serverMap, args.HostPort)
+			ps.docToServerMap[args.DocId] = serverMap
+			return nil
+		}
+	}
+	reply.Status = serverrpc.DocNotExist
 
 	return nil
 }

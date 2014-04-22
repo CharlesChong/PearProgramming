@@ -7,22 +7,11 @@ type Status int
 const (
 	OK           Status = iota + 1 // The RPC was a success.
 	NotReady                       // The storage servers are still getting ready.
+	DocExist
+	DocNotExist
 )
 
-type ServerId string
 type Message string
-
-type Node struct {
-	HostPort string // The host:port address of the storage server node.
-}
-
-type AddServerArgs struct {
-	HostPort string
-}
-
-type AddServerReply struct {
-	Status Status
-}
 
 type AddDocArgs struct {
 	DocId string
@@ -30,7 +19,9 @@ type AddDocArgs struct {
 }
 
 type AddDocReply struct {
-	Teammates []string
+	DocId string
+	Teammates map[string]bool
+	Status Status
 }
 
 type RemoveDocArgs struct {
@@ -39,5 +30,14 @@ type RemoveDocArgs struct {
 }
 
 type RemoveDocReply struct {
+	DocId string
+	Status Status
+}
+
+type AddServerArgs struct {
+	HostPort string
+}
+
+type AddServerReply struct {
 	Status Status
 }
