@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	// "fmt"
 	"log"
 	"pear/central"
 )
@@ -14,7 +14,6 @@ var (
 )
 
 func main() {
-	fmt.Println("PearCentral Running....")
 	flag.Parse()
 
 	// Create and start the StorageServer.
@@ -22,4 +21,5 @@ func main() {
 	if err != nil {
 		log.Fatalln("Failed to create storage server:", err)
 	}
+	select {}
 }

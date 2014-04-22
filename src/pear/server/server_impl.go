@@ -4,7 +4,7 @@ import (
     "code.google.com/p/go.net/websocket"
 	"common"
 	"fmt"
-	"log"
+	// "log"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -59,8 +59,14 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 		return nil, err
 	}
 
+	err = addDocCentral(&ps,myHostPort,"Hello")
+	if myHostPort == "localhost:9001" {
+		common.LOGV.Println("Testing Remove")
+		err = removeDocCentral(&ps,myHostPort, "Hello")
+	}
+
 	http.Handle("/", websocket.Handler(ps.ClientHandler))
-	log.Fatal(http.ListenAndServe(":" + strconv.Itoa(port), nil))
+	go http.ListenAndServe(":" + strconv.Itoa(port), nil)
 
 	return &ps, nil
 }
@@ -105,6 +111,8 @@ func participantInit(ps *server, myHostPort string) error {
 		time.Sleep(time.Second)
 	}
 }
+
+
 
 func (ps *server) AddedDoc(args *serverrpc.AddedDocArgs, reply *serverrpc.AddedDocReply) error {
 	reply.DocId = args.DocId
@@ -167,4 +175,79 @@ func (ps *server) CompletePhase(args *serverrpc.CompleteArgs, reply *serverrpc.C
 	reply.Msg = args.Msg
 	fmt.Println("Cmp Rsp ", reply.Msg)
 	return nil
+}
+
+
+func addDocCentral(ps *server, myHostPort,docId string) error {
+	client, err := dialRpc(ps.centralHostPort)
+	if err != nil {
+		common.LOGE.Println(err)
+		return err
+	}
+	
+	for {
+		// Make RPC Call to Master
+		args := &centralrpc.AddDocArgs{
+			DocId: docId,
+			HostPort: myHostPort,
+		}
+		var reply centralrpc.AddDocReply
+		if err := client.Call("PearCentral.AddDoc", args, &reply); err != nil {
+			return err
+		}
+
+		// Check reply from Master
+		if reply.Status == centralrpc.OK {
+			common.LOGV.Println(reply)
+			return nil
+		}
+
+		time.Sleep(time.Second)
+	}
+}
+
+
+func removeDocCentral(ps *server, myHostPort, docId string) error {
+	client, err := dialRpc(ps.centralHostPort)
+	if err != nil {
+		common.LOGE.Println(err)
+		return err
+	}
+	for {
+		// Make RPC Call to Master
+		args := &centralrpc.RemoveDocArgs{
+			DocId: docId,
+			HostPort: myHostPort,
+		}
+		var reply centralrpc.RemoveDocReply
+		if err := client.Call("PearCentral.RemoveDoc", args, &reply); err != nil {
+			return err
+		}
+
+		// Check reply from Master
+		if reply.Status == centralrpc.OK {
+			common.LOGV.Println(reply)
+			return nil
+		}
+
+		time.Sleep(time.Second)
+	}
+}
+
+func dialRpc(dstHostPort string) (*rpc.Client, error) {
+	var client *rpc.Client
+	var err error
+	maxFail := 5
+	for tries := 0; ; tries++ {
+		client, err = rpc.DialHTTP("tcp", dstHostPort)
+		if err != nil {
+			common.LOGE.Println("Try:", tries)
+			if tries >= maxFail {
+				return nil ,err
+			}
+			time.Sleep(time.Second)
+		} else {
+			return client, nil
+		}
+	}
 }
