@@ -52,10 +52,7 @@ function setupServer(serverHostPort) {
     ws.onopen = function () {
         ws.send(clientId+"");
         ws.send(docId);
-        ws.onmessage = function(e) {
-            editor.setValue(e.data);
-           ws.onmessage = serverHandler;
-        }
+        ws.onmessage = serverHandler;
     }
 }
 
@@ -68,6 +65,13 @@ function serverHandler(e) {
     var command = msg.substr(0, 10);
     var args = msg.substring(10, msg.length);
     console.log(command + ":" + args);
+    switch(command) {
+    case "setDoc    ":
+        editor.setValue(args);
+        break;
+    default:
+        console.log("Received unrecognized command")
+    }
 }
 
 function editorChange(e) {

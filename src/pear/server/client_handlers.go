@@ -3,7 +3,6 @@ package server
 import (
     "code.google.com/p/go.net/websocket"
     "common"
-    "io"
 )
 
 type client struct {
@@ -23,12 +22,12 @@ func (ps *server) ClientHandler(ws *websocket.Conn) {
     }
     if err == nil {
         // $TODO: Get text for doc
-        err = websocket.Message.Send(ws, "This is the text for " + c.docId)
+        err = websocket.Message.Send(ws, "setDoc    This is the text for " + c.docId)
     }    
     if err != nil {
         common.LOGE.Println("Websocket error during setup: " + err.Error())
         return
     }
 
-    io.Copy(ws, ws)
+    //io.Copy(ws, ws)
 }
