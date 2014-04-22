@@ -1,8 +1,11 @@
 var ws;
+var clientId;
 $(function(){
     $.get("http://" + centralHostPort, {docId: docId})
         .done(function(data) {
-            setupServer(data);
+            var reply = data.split(" ", 2);
+            clientId = (reply[0]);
+            setupServer(reply[1]);
         }).fail(function(data) {
             alert("Failed to retrieve server information");
             console.log(data);
@@ -44,13 +47,13 @@ function setupGUI() {
 
 function setupServer(serverHostPort) {
     ws = new WebSocket("ws://" + serverHostPort);
+    console.log(clientId);
+    console.log(serverHostPort)
     ws.onmessage = serverHandler;
 }
 
 function serverHandler(e) {
     console.log(event.data)
-    console.log("Received: " + e.data);
-    console.log(e)
 }
 
 function editorChange(e) {
