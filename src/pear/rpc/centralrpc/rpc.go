@@ -1,9 +1,9 @@
 package centralrpc
 
 type RemoteCentral interface {
-	AddDoc(*AddDocArgs,*AddDocReply) error
-	RemoveDoc(*RemoveDocArgs,*RemoveDocReply) error
-	AddServer(*AddServerArgs,*AddServerReply) error
+	AddDoc(*AddDocArgs, *AddDocReply) error
+	RemoveDoc(*RemoveDocArgs, *RemoveDocReply) error
+	AddServer(*AddServerArgs, *AddServerReply) error
 }
 
 type Central struct {

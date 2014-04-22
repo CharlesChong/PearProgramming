@@ -4,8 +4,8 @@ package serverrpc
 type Status int
 
 const (
-	OK           Status = iota + 1 // The RPC was a success.
-	NotReady                       // The storage servers are still getting ready.
+	OK       Status = iota + 1 // The RPC was a success.
+	NotReady                   // The storage servers are still getting ready.
 	DocExist
 	DocNotExist
 	InvalidServer
@@ -17,34 +17,34 @@ type Message string
 type ServerId string
 
 type AddedDocArgs struct {
-	DocId		DocId
-	HostPort	ServerId
+	DocId    DocId
+	HostPort ServerId
 }
 
 type AddedDocReply struct {
-	DocId   DocId
+	DocId     DocId
 	Teammates map[ServerId]bool
-	Status  Status
+	Status    Status
 }
 
 type RemovedDocArgs struct {
-	DocId   	DocId
-	HostPort	ServerId
+	DocId    DocId
+	HostPort ServerId
 }
 
 type RemovedDocReply struct {
-	DocId   DocId
-	Status  Status
+	DocId  DocId
+	Status Status
 }
 
 type GetDocArgs struct {
-	DocId   DocId
+	DocId DocId
 }
 
 type GetDocReply struct {
-	Doc     Doc
-	DocId   DocId
-	Status  Status
+	Doc    Doc
+	DocId  DocId
+	Status Status
 }
 
 type VoteArgs struct {
@@ -53,12 +53,12 @@ type VoteArgs struct {
 
 type VoteReply struct {
 	Vote bool
-	Msg Message
+	Msg  Message
 }
 
 type CompleteArgs struct {
 	Rollback bool
-	Msg Message
+	Msg      Message
 }
 
 type CompleteReply struct {
