@@ -5,6 +5,11 @@ import (
     "io"
 )
 
+type client struct {
+	DocId				int
+	ws					*websocket.Conn
+}
+
 func ClientHandler(ws *websocket.Conn) {
     io.Copy(ws, ws)
 }

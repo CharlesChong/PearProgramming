@@ -14,8 +14,8 @@ import (
 type server struct {
 	centralHostPort 	 string
 	port                 int
-	clientToDocMap 		map[int]serverrpc.DocId // clientID to doc
-	docToClientMap		map[serverrpc.DocId]int
+	clients 			map[int]*client // clientID to doc
+	docToClientMap		map[serverrpc.DocId][]int
 	connMap				map[serverrpc.ServerId]*net.Conn 
 	docToServerMap		map[serverrpc.DocId]map[serverrpc.ServerId]bool
 }
@@ -25,8 +25,8 @@ func NewServer(centralHostPort string,port int) (Server, error) {
 	ps := server{}
 	ps.centralHostPort = centralHostPort
 	ps.port = port
-	ps.clientToDocMap = make(map[int]serverrpc.DocId)
-	ps.docToClientMap = make(map[serverrpc.DocId]int)
+	ps.clients = make(map[int]*client)
+	ps.docToClientMap = make(map[serverrpc.DocId][]int)
 	ps.connMap = make(map[serverrpc.ServerId]*net.Conn)
 	ps.docToServerMap = make(map[serverrpc.DocId]map[serverrpc.ServerId]bool)
 	
