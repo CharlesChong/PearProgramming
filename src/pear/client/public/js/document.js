@@ -46,10 +46,15 @@ function setupGUI() {
 }
 
 function setupServer(serverHostPort) {
-    ws = new WebSocket("ws://" + serverHostPort);
-    console.log(clientId);
-    console.log(serverHostPort)
-    ws.onmessage = serverHandler;
+    ws = new WebSocket("ws://" + serverHostPort, ["Message"]);
+    ws.onopen = function () {
+        ws.send(clientId+"");
+        ws.send(docId);
+        ws.onmessage = function(e) {
+            editor.setValue(e.data.text);
+            ws.onmessage = serverHandler;
+        }
+    }
 }
 
 function serverHandler(e) {

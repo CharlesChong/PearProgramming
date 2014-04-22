@@ -1,10 +1,13 @@
 package server
 
 import (
+    "code.google.com/p/go.net/websocket"
 	"pear/rpc/serverrpc"
 	"pear/rpc/centralrpc"
 	"net/rpc"
 	"net/http"
+	"log"
+	"strconv"
 	"net"
 	"common"
 	"time"
@@ -51,6 +54,9 @@ func NewServer(centralHostPort string,port int) (Server, error) {
 		common.LOGE.Println(err)
 		return nil, err
 	}
+
+	http.Handle("/", websocket.Handler(ps.ClientHandler))
+	log.Fatal(http.ListenAndServe(":" + strconv.Itoa(port), nil))
 
 	return &ps, nil
 }

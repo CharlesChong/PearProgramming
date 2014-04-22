@@ -3,11 +3,8 @@ package main
 import (
 	"flag"
 	"log"
-	"strconv"
 	"fmt"
 	"pear/server"
-	"code.google.com/p/go.net/websocket"
-	"net/http"
 )
 const defaultPort = 9000
 const defaultCentralPort = "localhost:3000"
@@ -27,9 +24,6 @@ func main() {
 	if err != nil {
 		log.Fatalln("Failed to create storage server:", err)
 	}
-
-	http.Handle("/", websocket.Handler(server.ClientHandler))
-	log.Fatal(http.ListenAndServe(":" + strconv.Itoa(*myPort), nil))
 
 	// Run the storage server forever.
 	// select {}
