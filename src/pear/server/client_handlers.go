@@ -5,6 +5,11 @@ import (
     "common"
 )
 
+type client struct {
+    DocId int
+    ws    *websocket.Conn
+}
+
 func (ps *server) ClientHandler(ws *websocket.Conn) {
     var clientId string
     err := websocket.Message.Receive(ws, &clientId)

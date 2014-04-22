@@ -1,13 +1,13 @@
 package main
 
 import (
-    "fmt"
-    "flag"
-    "log"
-    "pear/central"
+	"flag"
+	"fmt"
+	"log"
+	"pear/central"
 )
 
-const defaultPort = 3000;
+const defaultPort = 3000
 
 var (
 	myPort = flag.Int("port", defaultPort, "port number to listen on")
