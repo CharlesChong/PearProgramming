@@ -59,11 +59,12 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 		return nil, err
 	}
 
-	err = addDocCentral(&ps,myHostPort,"Hello")
-	if myHostPort == "localhost:9001" {
-		common.LOGV.Println("Testing Remove")
-		err = removeDocCentral(&ps,myHostPort, "Hello")
-	}
+	// Test Code here! TODO: Remove
+	// err = addDocCentral(&ps,myHostPort,"Hello")
+	// if myHostPort == "localhost:9001" {
+	// 	common.LOGV.Println("Testing Remove")
+	// 	err = removeDocCentral(&ps,myHostPort, "Hello")
+	// }
 
 	http.Handle("/", websocket.Handler(ps.ClientHandler))
 	go http.ListenAndServe(":" + strconv.Itoa(port), nil)
@@ -184,7 +185,7 @@ func addDocCentral(ps *server, myHostPort,docId string) error {
 		common.LOGE.Println(err)
 		return err
 	}
-	
+
 	for {
 		// Make RPC Call to Master
 		args := &centralrpc.AddDocArgs{
