@@ -56,7 +56,7 @@ func NewCentral(port int) (Central, error) {
 func (c *central) AddDoc(args *centralrpc.AddDocArgs, reply *centralrpc.AddDocReply) error {
 	reply.DocId = args.DocId
 	reply.Status = centralrpc.OK
-
+	common.LOGV.Println("AddDoc: ",args)
 	stat1 := addToMap(c.docMap, args.DocId, args.HostPort)
 	stat2 := addToMap(c.serverMap, args.HostPort, args.DocId)
 
@@ -121,10 +121,12 @@ func removeMap(m map[string]map[string]bool, key1, key2 string) centralrpc.Statu
 
 func (c *central) broadcastAddDoc(args *centralrpc.AddDocArgs) {
 	common.LOGV.Println("TODO")
+
 }
 
 func (c *central) broadcastRemoveDoc(args *centralrpc.RemoveDocArgs) {
 	common.LOGV.Println("TODO")
+
 }
 
 func (c *central) AddServer(args *centralrpc.AddServerArgs, reply *centralrpc.AddServerReply) error {

@@ -4,7 +4,7 @@ import (
     "code.google.com/p/go.net/websocket"
     "common"
     "io"
-    "time"
+    //"time"
 )
 
 type client struct {

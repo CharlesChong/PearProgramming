@@ -4,7 +4,6 @@ import (
     "code.google.com/p/go.net/websocket"
 	"common"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -17,10 +16,15 @@ import (
 type server struct {
 	centralHostPort string
 	port            int
-	clients         map[string]*client // clientID to doc
-	docToClientMap  map[serverrpc.DocId][]int
-	connMap         map[serverrpc.ServerId]*net.Conn
-	docToServerMap  map[serverrpc.DocId]map[serverrpc.ServerId]bool
+	// clientID -> client struct with docs
+	// client struct in clientHandlers.go file
+	clients         map[string]*client 
+	// doc -> clientList (clientID)
+	docToClientMap  map[string][]string
+	// connection map remembers old clients
+	connMap         map[string]*rpc.Client
+	// doc -> serverID (hostport) -> exists bool
+	docToServerMap  map[string]map[string]bool
 }
 
 func NewServer(centralHostPort string, port int) (Server, error) {
@@ -29,9 +33,9 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	ps.centralHostPort = centralHostPort
 	ps.port = port
 	ps.clients = make(map[string]*client)
-	ps.docToClientMap = make(map[serverrpc.DocId][]int)
-	ps.connMap = make(map[serverrpc.ServerId]*net.Conn)
-	ps.docToServerMap = make(map[serverrpc.DocId]map[serverrpc.ServerId]bool)
+	ps.docToClientMap = make(map[string][]string)
+	ps.connMap = make(map[string]*rpc.Client)
+	ps.docToServerMap = make(map[string]map[string]bool)
 
 	myHostPort := fmt.Sprintf("localhost:%d", port)
 
@@ -59,8 +63,15 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 		return nil, err
 	}
 
+	// Test Code here! TODO: Remove
+	// err = addDocCentral(&ps,myHostPort,"Hello")
+	// if myHostPort == "localhost:9001" {
+	// 	common.LOGV.Println("Testing Remove")
+	// 	err = removeDocCentral(&ps,myHostPort, "Hello")
+	// }
+
 	http.Handle("/", websocket.Handler(ps.clientConnHandler))
-	log.Fatal(http.ListenAndServe(":" + strconv.Itoa(port), nil))
+	go http.ListenAndServe(":" + strconv.Itoa(port), nil)
 
 	return &ps, nil
 }
@@ -106,14 +117,16 @@ func participantInit(ps *server, myHostPort string) error {
 	}
 }
 
+
+
 func (ps *server) AddedDoc(args *serverrpc.AddedDocArgs, reply *serverrpc.AddedDocReply) error {
 	reply.DocId = args.DocId
-	reply.Teammates = make(map[serverrpc.ServerId]bool)
+	reply.Teammates = make(map[string]bool)
 	reply.Status = serverrpc.OK
 
 	serverMap, ok := ps.docToServerMap[args.DocId]
 	if !ok {
-		newMap := make(map[serverrpc.ServerId]bool)
+		newMap := make(map[string]bool)
 		newMap[args.HostPort] = true
 		ps.docToServerMap[args.DocId] = newMap
 		reply.Teammates = newMap
@@ -167,4 +180,90 @@ func (ps *server) CompletePhase(args *serverrpc.CompleteArgs, reply *serverrpc.C
 	reply.Msg = args.Msg
 	fmt.Println("Cmp Rsp ", reply.Msg)
 	return nil
+}
+
+
+func addDocCentral(ps *server, myHostPort,docId string) error {
+	client, err := dialRpc(ps,ps.centralHostPort)
+	if err != nil {
+		common.LOGE.Println(err)
+		return err
+	}
+
+	for {
+		// Make RPC Call to Master
+		args := &centralrpc.AddDocArgs{
+			DocId: docId,
+			HostPort: myHostPort,
+		}
+		var reply centralrpc.AddDocReply
+		if err := client.Call("PearCentral.AddDoc", args, &reply); err != nil {
+			return err
+		}
+
+		// Check reply from Master
+		if reply.Status == centralrpc.OK {
+			common.LOGV.Println(reply)
+			return nil
+		}
+
+		time.Sleep(time.Second)
+	}
+}
+
+
+func removeDocCentral(ps *server, myHostPort, docId string) error {
+	client, err := dialRpc(ps,ps.centralHostPort)
+	if err != nil {
+		common.LOGE.Println(err)
+		return err
+	}
+	for {
+		// Make RPC Call to Master
+		args := &centralrpc.RemoveDocArgs{
+			DocId: docId,
+			HostPort: myHostPort,
+		}
+		var reply centralrpc.RemoveDocReply
+		if err := client.Call("PearCentral.RemoveDoc", args, &reply); err != nil {
+			return err
+		}
+
+		// Check reply from Master
+		if reply.Status == centralrpc.OK {
+			common.LOGV.Println(reply)
+			return nil
+		}
+
+		time.Sleep(time.Second)
+	}
+}
+
+func dialRpc(ps *server, dstHostPort string) (*rpc.Client, error) {
+	oldClient, ok := ps.connMap[dstHostPort]
+	if ok {
+		return oldClient, nil
+	}
+
+	// Initialized new connection
+	var client *rpc.Client
+	var err error
+	maxFail := 5
+
+	for tries := 0; ; tries++ {
+		client, err = rpc.DialHTTP("tcp", dstHostPort)
+		if err != nil {
+			common.LOGE.Println("Try:", tries)
+			if tries >= maxFail {
+				return nil ,err
+			}
+			time.Sleep(time.Second)
+
+		} else {	
+			// Store in conn Map
+			ps.connMap[dstHostPort] = client
+			return client, nil
+		}
+	}
+
 }

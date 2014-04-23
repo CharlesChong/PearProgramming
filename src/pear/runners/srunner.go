@@ -27,6 +27,6 @@ func main() {
 	}
 
 	// Run the storage server forever.
-	// select {}
+	select {}
 
 }
