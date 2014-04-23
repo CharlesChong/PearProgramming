@@ -18,9 +18,9 @@ type server struct {
 	port            int
 	// clientID -> client struct with docs
 	// client struct in clientHandlers.go file
-	clients         map[int]*client 
+	clients         map[string]*client 
 	// doc -> clientList (clientID)
-	docToClientMap  map[string][]int
+	docToClientMap  map[string][]string
 	// connection map remembers old clients
 	connMap         map[string]*rpc.Client
 	// doc -> serverID (hostport) -> exists bool
@@ -31,8 +31,8 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	ps := server{}
 	ps.centralHostPort = centralHostPort
 	ps.port = port
-	ps.clients = make(map[int]*client)
-	ps.docToClientMap = make(map[string][]int)
+	ps.clients = make(map[string]*client)
+	ps.docToClientMap = make(map[string][]string)
 	ps.connMap = make(map[string]*rpc.Client)
 	ps.docToServerMap = make(map[string]map[string]bool)
 
@@ -69,7 +69,7 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	// 	err = removeDocToCentral(&ps,myHostPort, "Hello")
 	// }
 
-	http.Handle("/", websocket.Handler(ps.ClientHandler))
+	http.Handle("/", websocket.Handler(ps.clientConnHandler))
 	go http.ListenAndServe(":" + strconv.Itoa(port), nil)
 
 	return &ps, nil

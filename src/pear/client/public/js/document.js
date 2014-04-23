@@ -1,6 +1,7 @@
 var ws;
 var clientId;
 var editor;
+var settingDoc = false;
 
 $(function(){
     $.get("http://" + centralHostPort, {docId: docId})
@@ -59,7 +60,7 @@ function setupServer(serverHostPort) {
 function serverHandler(e) {
     var msg = e.data
     if (msg.length < 10) {
-        console.log("Received an improper command")
+        console.log("Received an improper command :" + msg);
         return
     }
     var command = msg.substr(0, 10);
@@ -67,7 +68,17 @@ function serverHandler(e) {
     console.log(command + ":" + args);
     switch(command) {
     case "setDoc    ":
+        settingDoc = true;
         editor.setValue(args);
+        settingDoc = false;
+        break;
+    case "getDoc    ":
+        break;
+    case "vote      ":
+        break;
+    case "comple    ":
+        break;
+    case "requestTxn":
         break;
     default:
         console.log("Received unrecognized command")
@@ -75,5 +86,7 @@ function serverHandler(e) {
 }
 
 function editorChange(e) {
-    ws.send(e.data.text);
+    if (!settingDoc) {
+        ws.send("requestTxn" + e.data.text);
+    }
 }
