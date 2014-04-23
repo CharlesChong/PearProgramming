@@ -63,7 +63,7 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	}
 
 	// Test Code here! TODO: Remove
-	err = addDocToCentral(&ps,myHostPort,"Hello")
+	// err = addDocToCentral(&ps,myHostPort,"Hello")
 	// if myHostPort == "localhost:9001" {
 	// 	common.LOGV.Println("Testing Remove")
 	// 	err = removeDocToCentral(&ps,myHostPort, "Hello")
