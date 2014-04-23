@@ -59,7 +59,7 @@ function setupServer(serverHostPort) {
 function serverHandler(e) {
     var msg = e.data
     if (msg.length < 10) {
-        console.log("Received an improper command")
+        console.log("Received an improper command :" + msg)
         return
     }
     var command = msg.substr(0, 10);
@@ -69,11 +69,20 @@ function serverHandler(e) {
     case "setDoc    ":
         editor.setValue(args);
         break;
+    case "getDoc    ":
+        break;
+    case "vote      ":
+        break;
+    case "comple    ":
+        break;
+    case "requestTxn":
+        break;
     default:
         console.log("Received unrecognized command")
     }
 }
 
 function editorChange(e) {
-    ws.send(e.data.text);
+    //ws.send("requestTxn" + e.data.text);
+    ws.send("")
 }

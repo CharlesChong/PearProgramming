@@ -17,7 +17,7 @@ import (
 type server struct {
 	centralHostPort string
 	port            int
-	clients         map[int]*client // clientID to doc
+	clients         map[string]*client // clientID to doc
 	docToClientMap  map[serverrpc.DocId][]int
 	connMap         map[serverrpc.ServerId]*net.Conn
 	docToServerMap  map[serverrpc.DocId]map[serverrpc.ServerId]bool
@@ -28,7 +28,7 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	ps := server{}
 	ps.centralHostPort = centralHostPort
 	ps.port = port
-	ps.clients = make(map[int]*client)
+	ps.clients = make(map[string]*client)
 	ps.docToClientMap = make(map[serverrpc.DocId][]int)
 	ps.connMap = make(map[serverrpc.ServerId]*net.Conn)
 	ps.docToServerMap = make(map[serverrpc.DocId]map[serverrpc.ServerId]bool)
@@ -59,7 +59,7 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 		return nil, err
 	}
 
-	http.Handle("/", websocket.Handler(ps.ClientHandler))
+	http.Handle("/", websocket.Handler(ps.clientConnHandler))
 	log.Fatal(http.ListenAndServe(":" + strconv.Itoa(port), nil))
 
 	return &ps, nil
