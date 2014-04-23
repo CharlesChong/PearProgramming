@@ -14,6 +14,7 @@ type client struct {
 }
 
 func (ps *server) clientConnHandler(ws *websocket.Conn) {
+    // Setup
     var c = client{}
     c.ws = ws
     err := websocket.Message.Receive(ws, &c.clientId)
@@ -28,26 +29,21 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
         common.LOGE.Println("Websocket error during setup: " + err.Error())
         return
     }
-
     ps.clients[c.clientId] = &c
-    go ps.clientReadHandler(c.clientId)
-}
 
-func (ps *server) clientReadHandler (clientId string) {
-    c := ps.clients[clientId]
+    
     for {
-        //c.ws.SetDeadline(time.Now().Add(time.Minute))
         var msg string
         err := websocket.Message.Receive(c.ws, &msg)
         if err != nil {
             if err != io.EOF {
                 common.LOGV.Println("Websocket error: " + err.Error())
             }
-            ps.closeClient(clientId)
+            ps.closeClient(c.clientId)
             return
         }
         if len(msg) < 10 {
-            common.LOGE.Println("Received invalid command from client " + clientId + ": " + msg)
+            common.LOGE.Println("Received invalid command from client " + c.clientId + ": " + msg)
         } else {
             command := msg[0:10]
             args := msg[10:len(msg)]
@@ -59,7 +55,7 @@ func (ps *server) clientReadHandler (clientId string) {
             case "comple    ":
             case "requestTxn":
             default:
-                common.LOGE.Println("Received unrecognized command from client " + clientId + ": " + msg)
+                common.LOGE.Println("Received unrecognized command from client " + c.clientId + ": " + msg)
             }
         }
     }
