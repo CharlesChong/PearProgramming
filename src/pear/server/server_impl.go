@@ -28,7 +28,6 @@ type server struct {
 }
 
 func NewServer(centralHostPort string, port int) (Server, error) {
-	common.LOGV.Println("Pear Server starting")
 	ps := server{}
 	ps.centralHostPort = centralHostPort
 	ps.port = port
@@ -64,10 +63,10 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	}
 
 	// Test Code here! TODO: Remove
-	// err = addDocCentral(&ps,myHostPort,"Hello")
+	err = addDocToCentral(&ps,myHostPort,"Hello")
 	// if myHostPort == "localhost:9001" {
 	// 	common.LOGV.Println("Testing Remove")
-	// 	err = removeDocCentral(&ps,myHostPort, "Hello")
+	// 	err = removeDocToCentral(&ps,myHostPort, "Hello")
 	// }
 
 	http.Handle("/", websocket.Handler(ps.ClientHandler))
@@ -77,26 +76,11 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 }
 
 func participantInit(ps *server, myHostPort string) error {
-	common.LOGV.Println("Participant Init:", ps.port)
-	var client *rpc.Client
-	var err error
-
-	maxFail := 5
-	for tries := 0; ; tries++ {
-		client, err = rpc.DialHTTP("tcp", ps.centralHostPort)
-		if err != nil {
-			common.LOGE.Println("Try:", tries)
-			if tries >= maxFail {
-				return err
-			}
-			time.Sleep(time.Second)
-		} else {
-			break
-		}
+	client, err := dialRpc(ps,ps.centralHostPort)
+	if err != nil {
+		common.LOGE.Println(err)
+		return err
 	}
-
-	common.LOGV.Println("Connection Made")
-
 	for {
 		// Make RPC Call to Master
 		args := &centralrpc.AddServerArgs{
@@ -106,20 +90,16 @@ func participantInit(ps *server, myHostPort string) error {
 		if err := client.Call("PearCentral.AddServer", args, &reply); err != nil {
 			return err
 		}
-
 		// Check reply from Master
 		if reply.Status == centralrpc.OK {
-			common.LOGV.Println("Registered")
 			return nil
 		}
-
 		time.Sleep(time.Second)
 	}
 }
 
-
-
 func (ps *server) AddedDoc(args *serverrpc.AddedDocArgs, reply *serverrpc.AddedDocReply) error {
+	common.LOGV.Println("Added Doc",args)
 	reply.DocId = args.DocId
 	reply.Teammates = make(map[string]bool)
 	reply.Status = serverrpc.OK
@@ -143,6 +123,7 @@ func (ps *server) AddedDoc(args *serverrpc.AddedDocArgs, reply *serverrpc.AddedD
 }
 
 func (ps *server) RemovedDoc(args *serverrpc.RemovedDocArgs, reply *serverrpc.RemovedDocReply) error {
+	common.LOGV.Println("Removed Doc: ", args)
 	reply.DocId = args.DocId
 	reply.Status = serverrpc.OK
 
@@ -161,6 +142,7 @@ func (ps *server) RemovedDoc(args *serverrpc.RemovedDocArgs, reply *serverrpc.Re
 }
 
 func (ps *server) GetDoc(args *serverrpc.GetDocArgs, reply *serverrpc.GetDocReply) error {
+	common.LOGV.Println("GetDoc: ", args)
 	reply.DocId = args.DocId
 	reply.Doc = "Fake Doc"
 	reply.Status = serverrpc.OK
@@ -168,22 +150,19 @@ func (ps *server) GetDoc(args *serverrpc.GetDocArgs, reply *serverrpc.GetDocRepl
 }
 
 func (ps *server) VotePhase(args *serverrpc.VoteArgs, reply *serverrpc.VoteReply) error {
-	fmt.Println("Vote: ", args.Msg)
+	common.LOGV.Println("Vote: ", args.Msg)
 	reply.Vote = true
 	reply.Msg = args.Msg
-	fmt.Println("Vote Rsp: ", reply.Msg, " ", reply.Vote)
 	return nil
 }
 
 func (ps *server) CompletePhase(args *serverrpc.CompleteArgs, reply *serverrpc.CompleteReply) error {
-	fmt.Println("Cmp: ", args.Msg, " rollback?", args.Rollback)
+	common.LOGV.Println("Cmp: ", args.Msg, " rollback?", args.Rollback)
 	reply.Msg = args.Msg
-	fmt.Println("Cmp Rsp ", reply.Msg)
 	return nil
 }
 
-
-func addDocCentral(ps *server, myHostPort,docId string) error {
+func addDocToCentral(ps *server, myHostPort,docId string) error {
 	client, err := dialRpc(ps,ps.centralHostPort)
 	if err != nil {
 		common.LOGE.Println(err)
@@ -191,19 +170,21 @@ func addDocCentral(ps *server, myHostPort,docId string) error {
 	}
 
 	for {
+
 		// Make RPC Call to Master
 		args := &centralrpc.AddDocArgs{
 			DocId: docId,
 			HostPort: myHostPort,
 		}
 		var reply centralrpc.AddDocReply
+		common.LOGV.Println("Call: AddDoc[",ps.centralHostPort,"]: ",reply)
+
 		if err := client.Call("PearCentral.AddDoc", args, &reply); err != nil {
 			return err
 		}
 
 		// Check reply from Master
 		if reply.Status == centralrpc.OK {
-			common.LOGV.Println(reply)
 			return nil
 		}
 
@@ -211,13 +192,13 @@ func addDocCentral(ps *server, myHostPort,docId string) error {
 	}
 }
 
-
-func removeDocCentral(ps *server, myHostPort, docId string) error {
+func removeDocToCentral(ps *server, myHostPort, docId string) error {
 	client, err := dialRpc(ps,ps.centralHostPort)
 	if err != nil {
 		common.LOGE.Println(err)
 		return err
 	}
+
 	for {
 		// Make RPC Call to Master
 		args := &centralrpc.RemoveDocArgs{
@@ -240,20 +221,19 @@ func removeDocCentral(ps *server, myHostPort, docId string) error {
 }
 
 func dialRpc(ps *server, dstHostPort string) (*rpc.Client, error) {
+	// Check if old connection exists
 	oldClient, ok := ps.connMap[dstHostPort]
 	if ok {
 		return oldClient, nil
 	}
 
-	// Initialized new connection
+	// Initialize new connection
 	var client *rpc.Client
 	var err error
 	maxFail := 5
-
 	for tries := 0; ; tries++ {
 		client, err = rpc.DialHTTP("tcp", dstHostPort)
 		if err != nil {
-			common.LOGE.Println("Try:", tries)
 			if tries >= maxFail {
 				return nil ,err
 			}
@@ -265,5 +245,4 @@ func dialRpc(ps *server, dstHostPort string) (*rpc.Client, error) {
 			return client, nil
 		}
 	}
-
 }
