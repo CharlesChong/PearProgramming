@@ -20,7 +20,7 @@ type server struct {
 	// client struct in clientHandlers.go file
 	clients         map[string]*client 
 	// doc -> clientList (clientID)
-	documents  map[string]map[string]bool
+	documents  		map[string]map[string]bool
 	// connection map remembers old clients
 	connMap         map[string]*rpc.Client
 	// doc -> serverID (hostport) -> exists bool
@@ -144,7 +144,7 @@ func (ps *server) RemovedDoc(args *serverrpc.RemovedDocArgs, reply *serverrpc.Re
 func (ps *server) GetDoc(args *serverrpc.GetDocArgs, reply *serverrpc.GetDocReply) error {
 	common.LOGV.Println("GetDoc: ", args)
 	reply.DocId = args.DocId
-	
+
 	reply.Doc = "Fake Doc"
 	reply.Status = serverrpc.OK
 	return nil
@@ -245,6 +245,8 @@ func (ps *server) dialRPC(dstHostPort string) (*rpc.Client, error) {
 	}
 }
 
+////////////////////////// Client Handler Calls /////////////////
+
 func (ps *server) AddClient(clientId, docId string) serverrpc.Status {
 	clientList, ok := ps.documents[docId]
 	if ok {
@@ -262,4 +264,36 @@ func (ps *server) AddClient(clientId, docId string) serverrpc.Status {
 		ps.documents[docId] = newClientList
 	}
 	return serverrpc.OK
+}
+
+///////////////////// Client Handler Calls ///////////////////
+
+func (ps *server) Start2PC () {
+
+}
+
+func (ps *server) CastVote () {
+
+}
+
+func (ps *server) GetDoc (docId string) string {
+	// Check if server has other clients with document
+	clientList, ok := ps.documents[docId]
+	if ok {
+		var dstClient string
+		for client, _ := range clientList {
+			if client != ps.myHostPort {
+				dstClient := client
+				break
+			}
+		}
+		
+	} 
+
+	// Ask Another server for document
+	serverList, ok2 := ps.docToServerMap[docId]
+	if ok2 {
+
+	}
+
 }
