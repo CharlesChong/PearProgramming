@@ -4,7 +4,6 @@ import (
     "code.google.com/p/go.net/websocket"
     "common"
     "io"
-    //"time"
 )
 
 type client struct {
@@ -14,7 +13,7 @@ type client struct {
 }
 
 func (ps *server) clientConnHandler(ws *websocket.Conn) {
-    // Setup
+    // Setup client
     var c = client{}
     var clientAck string
     c.ws = ws
@@ -37,9 +36,28 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
         common.LOGE.Println("Did not get setup ack from client");
         return
     }
+    // Store information
     ps.clients[c.clientId] = &c
+    clientList, ok := ps.documents[c.docId]
+    if ok {
+        // Doc exists on server
+        _, ok2 := clientList[c.clientId]
+        if !ok2 {
+            clientList[c.clientId] = true
+            ps.documents[c.docId] = clientList    
+        } else {
+            common.LOGE.Println("Client ID already exists")
+            return
+        }
+    } else {
+        // New doc on server
+        newClientList := make(map[string]bool)
+        newClientList[c.clientId] = true
+        ps.documents[c.docId] = newClientList
+        err = sendAddDoc(ps,ps.myHostPort,c.docId)
+    }
 
-    
+    // Read handler
     for {
         var msg string
         err := websocket.Message.Receive(c.ws, &msg)
@@ -54,12 +72,11 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
             common.LOGE.Println("Received invalid command from client " + c.clientId + ": " + msg)
         } else {
             command := msg[0:10]
-            args := msg[10:len(msg)]
-            common.LOGV.Println(command + ":" + args) // $
+            //args := msg[10:len(msg)]
             switch command {
             case "getDoc    ":
             case "vote      ":
-            case "comple    ":
+            case "complete  ":
             case "requestTxn":
             default:
                 common.LOGE.Println("Received unrecognized command from client " + c.clientId + ": " + msg)

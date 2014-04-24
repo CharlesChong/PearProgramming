@@ -15,6 +15,7 @@ import (
 
 type server struct {
 	centralHostPort string
+	myHostPort		string
 	port            int
 	// clientID -> client struct with docs
 	// client struct in clientHandlers.go file
@@ -30,16 +31,15 @@ type server struct {
 func NewServer(centralHostPort string, port int) (Server, error) {
 	ps := server{}
 	ps.centralHostPort = centralHostPort
+	ps.myHostPort = fmt.Sprintf("localhost:%d", port)
 	ps.port = port
 	ps.clients = make(map[string]*client)
 	ps.documents = make(map[string]map[string]bool)
 	ps.connMap = make(map[string]*rpc.Client)
-	ps.docToServerMap = make(map[string]map[string]bool)
-
-	myHostPort := fmt.Sprintf("localhost:%d", port)
+	ps.docToServerMap = make(map[string]map[string]bool)	
 
 	// Create the server socket that will listen for incoming RPCs.
-	listener, err := net.Listen("tcp", myHostPort)
+	listener, err := net.Listen("tcp", ps.myHostPort)
 	if err != nil {
 		return nil, err
 	}
@@ -55,18 +55,18 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	rpc.HandleHTTP()
 	go http.Serve(listener, nil)
 
-	// err = coordinatorInit(&ps, myHostPort)
-	err = participantInit(&ps, myHostPort)
+	// err = coordinatorInit(&ps, ps.myHostPort)
+	err = participantInit(&ps, ps.myHostPort)
 	if err != nil {
 		common.LOGE.Println(err)
 		return nil, err
 	}
 
 	// Test Code here! TODO: Remove
-	err = sendAddDoc(&ps,myHostPort,"Hello")
-	if myHostPort == "localhost:9001" {
+	err = sendAddDoc(&ps,ps.myHostPort,"Hello")
+	if ps.myHostPort == "localhost:9001" {
 		common.LOGV.Println("Testing Remove")
-		err = sendRemoveDoc(&ps,myHostPort, "Hello")
+		err = sendRemoveDoc(&ps,ps.myHostPort, "Hello")
 	}
 
 	http.Handle("/", websocket.Handler(ps.clientConnHandler))
