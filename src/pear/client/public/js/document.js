@@ -45,7 +45,8 @@ function setupGUI() {
             }
         });
     });
-    $("#openSidePanelButton").click()
+    $("#openSidePanelButton").click();
+    editor.focus();
 }
 
 function setupServer(serverHostPort) {
@@ -71,12 +72,17 @@ function serverHandler(e) {
         settingDoc = true;
         editor.setValue(args);
         settingDoc = false;
+        editor.gotoLine(0);
+        ws.send("setDoc    " + "ok");
         break;
     case "getDoc    ":
+        ws.send("getDoc    " + editor.getValue());
         break;
     case "vote      ":
+        ws.send("vote      " + "yes")
         break;
-    case "comple    ":
+    case "complete  ":
+        ws.send("complete  " + "ok")
         break;
     case "requestTxn":
         break;
