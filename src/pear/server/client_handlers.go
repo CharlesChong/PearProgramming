@@ -57,6 +57,12 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
         err = sendAddDoc(ps,ps.myHostPort,c.docId)
     }
 
+    ps.clientReadHandler(c.clientId)
+}
+
+func (ps *server) clientReadHandler(clientId string) {
+    c := ps.clients[clientId]
+
     // Read handler
     for {
         var msg string
@@ -72,7 +78,8 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
             common.LOGE.Println("Received invalid command from client " + c.clientId + ": " + msg)
         } else {
             command := msg[0:10]
-            //args := msg[10:len(msg)]
+            args := msg[10:len(msg)]
+            common.LOGV.Println(command+":"+args)
             switch command {
             case "getDoc    ":
             case "vote      ":
@@ -83,6 +90,7 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
             }
         }
     }
+
 }
 
 func (ps *server) closeClient (clientId string) {
