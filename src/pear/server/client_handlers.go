@@ -16,6 +16,7 @@ type client struct {
 func (ps *server) clientConnHandler(ws *websocket.Conn) {
     // Setup
     var c = client{}
+    var clientAck string
     c.ws = ws
     err := websocket.Message.Receive(ws, &c.clientId)
     if err == nil {
@@ -25,8 +26,15 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
         // $TODO: Get text for doc
         err = websocket.Message.Send(ws, "setDoc    This is the text for " + c.docId)
     }
+    if err == nil {
+        err = websocket.Message.Receive(c.ws, &clientAck)
+    }
     if err != nil {
         common.LOGE.Println("Websocket error during setup: " + err.Error())
+        return
+    }
+    if (clientAck != "setDoc    ok") {
+        common.LOGE.Println("Did not get setup ack from client");
         return
     }
     ps.clients[c.clientId] = &c
@@ -49,7 +57,6 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
             args := msg[10:len(msg)]
             common.LOGV.Println(command + ":" + args) // $
             switch command {
-            case "setDoc    ":
             case "getDoc    ":
             case "vote      ":
             case "comple    ":
