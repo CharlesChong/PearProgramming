@@ -112,7 +112,7 @@ func (c *central) RemoveDoc(args *centralrpc.RemoveDocArgs, reply *centralrpc.Re
 	// Broadcast new status to all collaborators
 	teammate , ok := c.docMap[args.DocId]
 	if ok {
-		err := c.broadcastRemoveDoc(teammate,args.DocId)
+		err := c.broadcastRemoveDoc(teammate,args)
 		if err != nil {
 			return err
 		}
@@ -172,7 +172,7 @@ func (c *central) NewClient(w http.ResponseWriter, r *http.Request) {
 
 func (c *central) broadcastAddDoc(teammate map[string]bool,args *centralrpc.AddDocArgs) error {
 	for k, _ := range teammate {
-		err := c.addedDoToPearServer(k,args.HostPort, args.DocId)
+		err := c.sendAddedDoc(k,args.HostPort, args.DocId)
 		if err != nil {
 			return err
 		}
@@ -182,7 +182,7 @@ func (c *central) broadcastAddDoc(teammate map[string]bool,args *centralrpc.AddD
 
 func (c *central) broadcastRemoveDoc(teammate map[string]bool, args *centralrpc.RemoveDocArgs) error {
 	for k, _ := range teammate {
-		err := c.removeDocToPearServer(k,args.HostPort, args.DocId)
+		err := c.sendRemoveDoc(k,args.HostPort, args.DocId)
 		if err != nil {
 			return err
 		}
@@ -190,8 +190,8 @@ func (c *central) broadcastRemoveDoc(teammate map[string]bool, args *centralrpc.
 	return nil
 }
 
-func (c *central) addedDoToPearServer(dstHostPort, myHostPort, docId string) error {
-	client, err := dialRPC(c,dstHostPort)
+func (c *central) sendAddedDoc(dstHostPort, myHostPort, docId string) error {
+	client, err := c.dialRPC(dstHostPort)
 	if err != nil {
 		common.LOGE.Println(err)
 		return err
@@ -204,10 +204,10 @@ func (c *central) addedDoToPearServer(dstHostPort, myHostPort, docId string) err
 			HostPort: myHostPort,
 		}
 		var reply serverrpc.AddedDocReply
-		common.LOGV.Println("Call AddedDoc[",dstHostPort,"]: ",reply)
 		if err := client.Call("PearServer.AddedDoc", args, &reply); err != nil {
 			return err
 		}
+		common.LOGV.Println("Call AddedDoc[",dstHostPort,"]: ",reply)
 		// Check reply from Master
 		if reply.Status == serverrpc.OK {
 			return nil
@@ -216,8 +216,8 @@ func (c *central) addedDoToPearServer(dstHostPort, myHostPort, docId string) err
 	}
 }
 
-func (c *central) removeDocToPearServer(dstHostPort, myHostPort, docId string) error {
-	client, err := dialRPC(c,dstHostPort)
+func (c *central) sendRemoveDoc(dstHostPort, myHostPort, docId string) error {
+	client, err := c.dialRPC(dstHostPort)
 	if err != nil {
 		common.LOGE.Println(err)
 		return err
@@ -225,12 +225,12 @@ func (c *central) removeDocToPearServer(dstHostPort, myHostPort, docId string) e
 	
 	for {
 		// Make RPC Call to Master
-		args := &serverrpc.RemoveDocArgs{
+		args := &serverrpc.RemovedDocArgs{
 			DocId: docId,
 			HostPort: myHostPort,
 		}
-		var reply serverrpc.RemoveDocReply
-		common.LOGV.Println("Call RemoveDoc[",dstHostPort,"]: ",reply)
+		var reply serverrpc.RemovedDocReply
+		common.LOGV.Println("Call RemovedDoc[",dstHostPort,"]: ",reply)
 		if err := client.Call("PearServer.RemoveDoc", args, &reply); err != nil {
 			return err
 		}
@@ -242,7 +242,7 @@ func (c *central) removeDocToPearServer(dstHostPort, myHostPort, docId string) e
 	}
 }
 
-func dialRPC(c *central, dstHostPort string) (*rpc.Client, error) {
+func (c *central) dialRPC(dstHostPort string) (*rpc.Client, error) {
 	// Check if old connection exists
 	oldClient, ok := c.connMap[dstHostPort]
 	if ok {

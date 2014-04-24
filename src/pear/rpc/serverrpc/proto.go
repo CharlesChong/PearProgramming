@@ -9,6 +9,8 @@ const (
 	DocExist
 	DocNotExist
 	InvalidServer
+	ClientExist
+	ClientNotExist
 )
 
 type Message string

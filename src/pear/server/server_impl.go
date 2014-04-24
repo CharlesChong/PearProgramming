@@ -20,7 +20,7 @@ type server struct {
 	// client struct in clientHandlers.go file
 	clients         map[string]*client 
 	// doc -> clientList (clientID)
-	docToClientMap  map[string][]string
+	documents  map[string]map[string]bool
 	// connection map remembers old clients
 	connMap         map[string]*rpc.Client
 	// doc -> serverID (hostport) -> exists bool
@@ -32,7 +32,7 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	ps.centralHostPort = centralHostPort
 	ps.port = port
 	ps.clients = make(map[string]*client)
-	ps.docToClientMap = make(map[string][]string)
+	ps.documents = make(map[string]map[string]bool)
 	ps.connMap = make(map[string]*rpc.Client)
 	ps.docToServerMap = make(map[string]map[string]bool)
 
@@ -63,11 +63,11 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	}
 
 	// Test Code here! TODO: Remove
-	// err = addDocToCentral(&ps,myHostPort,"Hello")
-	// if myHostPort == "localhost:9001" {
-	// 	common.LOGV.Println("Testing Remove")
-	// 	err = removeDocToCentral(&ps,myHostPort, "Hello")
-	// }
+	err = sendAddDoc(&ps,myHostPort,"Hello")
+	if myHostPort == "localhost:9001" {
+		common.LOGV.Println("Testing Remove")
+		err = sendRemoveDoc(&ps,myHostPort, "Hello")
+	}
 
 	http.Handle("/", websocket.Handler(ps.clientConnHandler))
 	go http.ListenAndServe(":" + strconv.Itoa(port), nil)
@@ -76,7 +76,7 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 }
 
 func participantInit(ps *server, myHostPort string) error {
-	client, err := dialRpc(ps,ps.centralHostPort)
+	client, err := ps.dialRPC(ps.centralHostPort)
 	if err != nil {
 		common.LOGE.Println(err)
 		return err
@@ -144,6 +144,7 @@ func (ps *server) RemovedDoc(args *serverrpc.RemovedDocArgs, reply *serverrpc.Re
 func (ps *server) GetDoc(args *serverrpc.GetDocArgs, reply *serverrpc.GetDocReply) error {
 	common.LOGV.Println("GetDoc: ", args)
 	reply.DocId = args.DocId
+	
 	reply.Doc = "Fake Doc"
 	reply.Status = serverrpc.OK
 	return nil
@@ -162,27 +163,24 @@ func (ps *server) CompletePhase(args *serverrpc.CompleteArgs, reply *serverrpc.C
 	return nil
 }
 
-func addDocToCentral(ps *server, myHostPort,docId string) error {
-	client, err := dialRpc(ps,ps.centralHostPort)
+func sendAddDoc(ps *server, myHostPort,docId string) error {
+	client, err := ps.dialRPC(ps.centralHostPort)
 	if err != nil {
 		common.LOGE.Println(err)
 		return err
 	}
 
 	for {
-
 		// Make RPC Call to Master
 		args := &centralrpc.AddDocArgs{
 			DocId: docId,
 			HostPort: myHostPort,
 		}
 		var reply centralrpc.AddDocReply
-		common.LOGV.Println("Call: AddDoc[",ps.centralHostPort,"]: ",reply)
-
 		if err := client.Call("PearCentral.AddDoc", args, &reply); err != nil {
 			return err
 		}
-
+		common.LOGV.Println("Call: AddDoc[",ps.centralHostPort,"]: ",reply)
 		// Check reply from Master
 		if reply.Status == centralrpc.OK {
 			return nil
@@ -192,8 +190,8 @@ func addDocToCentral(ps *server, myHostPort,docId string) error {
 	}
 }
 
-func removeDocToCentral(ps *server, myHostPort, docId string) error {
-	client, err := dialRpc(ps,ps.centralHostPort)
+func sendRemoveDoc(ps *server, myHostPort, docId string) error {
+	client, err := ps.dialRPC(ps.centralHostPort)
 	if err != nil {
 		common.LOGE.Println(err)
 		return err
@@ -220,7 +218,7 @@ func removeDocToCentral(ps *server, myHostPort, docId string) error {
 	}
 }
 
-func dialRpc(ps *server, dstHostPort string) (*rpc.Client, error) {
+func (ps *server) dialRPC(dstHostPort string) (*rpc.Client, error) {
 	// Check if old connection exists
 	oldClient, ok := ps.connMap[dstHostPort]
 	if ok {
@@ -245,4 +243,23 @@ func dialRpc(ps *server, dstHostPort string) (*rpc.Client, error) {
 			return client, nil
 		}
 	}
+}
+
+func (ps *server) AddClient(clientId, docId string) serverrpc.Status {
+	clientList, ok := ps.documents[docId]
+	if ok {
+		_, ok2 := clientList[clientId]
+		if !ok2 {
+			clientList[clientId] = true
+			ps.documents[docId] = clientList	
+		} else {
+			return serverrpc.ClientExist
+		}
+		
+	} else {
+		newClientList := make(map[string]bool)
+		newClientList[clientId] = true
+		ps.documents[docId] = newClientList
+	}
+	return serverrpc.OK
 }
