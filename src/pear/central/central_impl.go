@@ -49,8 +49,6 @@ func NewCentral(port int) (Central, error) {
 	// serve requests in a background goroutine.
 	rpc.HandleHTTP()
 	go http.Serve(listener, nil)
-
-	common.LOGV.Println("EXITING PEAR CENTRAL")
 	return &c, nil
 }
 

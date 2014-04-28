@@ -46,10 +46,12 @@ ${PEAR_SERVER} & #-port=${STORAGE_PORT} 2 #> /dev/null &
 PEAR_SERVER_PID=$!
 sleep 5
 
-echo "Done Startin Pear Server and Central"
 # Start the test.
 # ${LIB_TEST} -port=${LIB_PORT} "localhost:${STORAGE_PORT}"
 
 # Kill the storage server.
 kill -9 ${PEAR_SERVER_PID}
 wait ${PEAR_SERVER_PID} 2> /dev/null
+kill -9 ${PEAR_CENTRAL_PID}
+wait ${PEAR_CENTRAL_PID} 2> /dev/null
+
