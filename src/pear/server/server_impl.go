@@ -66,11 +66,11 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	}
 
 	// Test Code here! TODO: Remove
-	err = ps.sendAddDoc("Hello")
-	if ps.myHostPort == "localhost:9001" {
-		common.LOGV.Println("Testing Remove")
-		err = ps.sendRemoveDoc("Hello")
-	}
+	// err = ps.sendAddDoc("Hello")
+	// if ps.myHostPort == "localhost:9001" {
+	// 	common.LOGV.Println("Testing Remove")
+	// 	err = ps.sendRemoveDoc("Hello")
+	// }
 
 	http.Handle("/", websocket.Handler(ps.clientConnHandler))
 	go http.ListenAndServe(":" + strconv.Itoa(port), nil)
