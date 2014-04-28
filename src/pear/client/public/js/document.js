@@ -152,6 +152,10 @@ function serverHandler(e) {
 }
 
 function editorChange(e) {
+    
+}
+
+function requestTxn() {
     if (!settingDoc && !committing) {
         currTransactionId = clientId + ":" + transactionNum;
         transactionNum++;

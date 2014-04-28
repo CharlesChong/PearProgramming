@@ -103,17 +103,19 @@ func (ps *server) clientReadHandler(c *client) {
             } else {
                 msgId := body[0]
                 args := body[1]
-                common.LOGV.Println(msgId + ". " + Cmd + ":" + args)
+                common.LOGV.Println("Websocket Received: (" + msgId + "):" + Cmd + ":" + args)
                 switch Cmd {
                 case getDocCmd, voteCmd, completeCmd:
                     go c.handleResponse(msgId, Cmd, args)
                 case requestTxnCmd:
-                    commit, err := ps.ClientRequestTxn(&serverrpc.Message{TId: msgId, Body: args}, c.docId)
-                    if err != nil {
-                        common.LOGE.Println("Error requesting transaction: " + err.Error())
-                    } else {
-                        websocket.Message.Send(c.ws, requestTxnCmd + msgId + " " + strconv.FormatBool(commit))
-                    }
+                    go func () {
+                        commit, err := ps.ClientRequestTxn(&serverrpc.Message{TId: msgId, Body: args}, c.docId)
+                        if err != nil {
+                            common.LOGE.Println("Error requesting transaction: " + err.Error())
+                        } else {
+                            websocket.Message.Send(c.ws, requestTxnCmd + msgId + " " + strconv.FormatBool(commit))
+                        }
+                    }()
                 default:
                     common.LOGE.Println("Received unrecognized Cmd from client " + c.clientId + ": " + msg)
                 }
