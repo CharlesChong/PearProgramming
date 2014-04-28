@@ -108,10 +108,11 @@ func (c *central) RemoveDoc(args *centralrpc.RemoveDocArgs, reply *centralrpc.Re
 	if stat1 == centralrpc.DocNotExist || stat2 == centralrpc.DocNotExist {
 		reply.Status = centralrpc.DocNotExist
 	}
-
+	common.LOGV.Println("HELLO")
 	// Broadcast new status to all collaborators
 	teammate , ok := c.docMap[args.DocId]
 	if ok {
+		common.LOGV.Println(teammate)
 		err := c.broadcastRemoveDoc(teammate,args)
 		if err != nil {
 			return err
