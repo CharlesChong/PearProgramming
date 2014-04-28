@@ -11,7 +11,8 @@ var app = express();
 
 // all environments
 app.set('port', process.env.PORT || 80);
-app.set('views', __dirname + '/views');
+app.set('views', path.join(__dirname, 'views'));
+//app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 
 app.use(express.favicon(path.join(__dirname, 'public/img/favicon.ico'))); 

@@ -75,6 +75,17 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	// }
 
 	// Test 2: Get Doc
+	// var doc string
+	// err = ps.sendAddDoc("Hello")
+	// if ps.myHostPort == "localhost:9001" {
+	// 	doc , err = ps.ClientGetDoc("Hello")
+	// 	if err != nil {
+	// 		common.LOGE.Println(err)
+	// 		return nil, err
+	// 	}
+	// 	common.LOGV.Println("Result: ",doc)
+	// }
+
 	// Test 3: 2PC begin
 	// err = ps.sendAddDoc("Hello")
 	// time.Sleep(time.Second*5)
@@ -85,6 +96,7 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	// 	}
 	// 	_, err  = ps.ClientRequestTxn(&msg,"Hello")
 	// }
+
 
 	http.Handle("/", websocket.Handler(ps.clientConnHandler))
 	go http.ListenAndServe(":" + strconv.Itoa(port), nil)
@@ -186,7 +198,7 @@ func (ps *server) CompletePhase(args *serverrpc.CompleteArgs, reply *serverrpc.C
 /////////////////////// Sending RPC Calls //////////////////////
 
 func (ps *server) sendAddDoc(docId string) error {
-	err := ps.makeRPCCall(RPCAddDoc,ps.centralHostPort,docId)
+	err := ps.makeRPCCall(ps.RPCAddDoc,ps.centralHostPort,docId)
 	return err
 }
 
@@ -232,6 +244,7 @@ func (ps *server) ClientRequestTxn(msg *serverrpc.Message,docId string) (bool,er
 
 func (ps *server) ClientGetDoc(docId string) (string ,error) {
 	// Check if server has other clients with document
+	resCh := make(chan string)
 	clientList, ok := ps.documents[docId]
 	if ok {
 		for client, _ := range clientList {
@@ -247,14 +260,16 @@ func (ps *server) ClientGetDoc(docId string) (string ,error) {
 		for server, _ := range serverList {
 			if server != ps.myHostPort {
 				dstServer = server
+				break
 			}
 		}
 		if dstServer == "" {
 			// No other clients exist for document
 			return "", nil
 		}
-		err := ps.makeRPCCall(RPCGetDoc,dstServer,docId)
-		return "",err
+		go ps.makeRPCCall(RPCGetDoc(resCh),dstServer,docId)
+		doc := <- resCh
+		return doc, nil
 	} else {
 		// New Document
 		return "", nil
@@ -298,7 +313,7 @@ func (ps *server) dialRPC(dstHostPort string) (*rpc.Client, error) {
 	}
 }
 
-func RPCAddDoc(client *rpc.Client, docId, myHostPort string) error  {
+func (ps *server) RPCAddDoc(client *rpc.Client, docId, myHostPort string) error  {
 	// Pear Server -> Pear Central: Requesting Add Fresh New Document
 	for {
 		// Make RPC Call to Master
@@ -313,6 +328,13 @@ func RPCAddDoc(client *rpc.Client, docId, myHostPort string) error  {
 		common.LOGV.Println("Call:",":",reply)
 		// Check reply from Master
 		if reply.Status == centralrpc.OK {
+			_, ok := ps.docToServerMap[docId]
+			if !ok {
+				ps.docToServerMap[docId] = make(map[string]bool)
+			}
+			for k,_ := range reply.Teammates {
+				ps.docToServerMap[docId][k] = true
+			}
 			return nil
 		}
 		time.Sleep(time.Second)
@@ -340,24 +362,26 @@ func RPCRemoveDoc(client *rpc.Client, docId, myHostPort string) error  {
 	}
 }
 
-func RPCGetDoc(client *rpc.Client, docId, myHostPort string) error  {
-	// Pear Server -> Pear Server: Get Existing doc from another srv
-	for {
-		// Make RPC Call to Master
-		args := &serverrpc.GetDocArgs{
-			DocId: docId,
-			HostPort: myHostPort,
+func RPCGetDoc (resCh chan string) rpcFn {
+	return func (client *rpc.Client, docId, myHostPort string) error  {
+		// Pear Server -> Pear Server: Get Existing doc from another srv
+		for {
+			// Make RPC Call to Master
+			args := &serverrpc.GetDocArgs{
+				DocId: docId,
+				HostPort: myHostPort,
+			}
+			var reply serverrpc.GetDocReply
+			if err := client.Call("PearServer.GetDoc", args, &reply); err != nil {
+				return err
+			}
+			// Check reply from Master
+			if reply.Status == serverrpc.OK {
+				resCh <- reply.Doc
+				return nil
+			}
+			time.Sleep(time.Second)
 		}
-		var reply serverrpc.GetDocReply
-		if err := client.Call("PearServer.GetDoc", args, &reply); err != nil {
-			return err
-		}
-		// Check reply from Master
-		if reply.Status == serverrpc.OK {
-			common.LOGV.Println(reply)
-			return nil
-		}
-		time.Sleep(time.Second)
 	}
 }
 
