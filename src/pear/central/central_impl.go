@@ -102,22 +102,23 @@ func (c *central) RemoveDoc(args *centralrpc.RemoveDocArgs, reply *centralrpc.Re
 	common.LOGV.Println("RemoveDoc: ",args)
 	reply.DocId = args.DocId
 	reply.Status = centralrpc.OK
-
-	stat1 := removeMap(c.docMap, args.DocId, args.HostPort)
-	stat2 := removeMap(c.serverMap, args.HostPort, args.DocId)
-	if stat1 == centralrpc.DocNotExist || stat2 == centralrpc.DocNotExist {
-		reply.Status = centralrpc.DocNotExist
-	}
-
+	
 	// Broadcast new status to all collaborators
 	teammate , ok := c.docMap[args.DocId]
 	if ok {
+		common.LOGV.Println(teammate)
 		err := c.broadcastRemoveDoc(teammate,args)
 		if err != nil {
 			return err
 		}
 	}
 
+	stat1 := removeMap(c.docMap, args.DocId, args.HostPort)
+	stat2 := removeMap(c.serverMap, args.HostPort, args.DocId)
+	if stat1 == centralrpc.DocNotExist || stat2 == centralrpc.DocNotExist {
+		reply.Status = centralrpc.DocNotExist
+	}
+	
 	return nil
 }
 

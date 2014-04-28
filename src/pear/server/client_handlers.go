@@ -55,8 +55,15 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
         newClientList[c.clientId] = true
         ps.documents[c.docId] = newClientList
         err = sendAddDoc(ps,ps.myHostPort,c.docId)
+        if err != nil {
+            common.LOGE.Println("Error adding doc: " + err.Error())
+        }
     }
 
+    ps.clientReadHandler(&c)
+}
+
+func (ps *server) clientReadHandler(c *client) {
     // Read handler
     for {
         var msg string
@@ -65,14 +72,15 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
             if err != io.EOF {
                 common.LOGV.Println("Websocket error: " + err.Error())
             }
-            ps.closeClient(c.clientId)
+            ps.closeClient(c)
             return
         }
         if len(msg) < 10 {
             common.LOGE.Println("Received invalid command from client " + c.clientId + ": " + msg)
         } else {
             command := msg[0:10]
-            //args := msg[10:len(msg)]
+            args := msg[10:len(msg)]
+            common.LOGV.Println(command+":"+args)
             switch command {
             case "getDoc    ":
             case "vote      ":
@@ -83,7 +91,22 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
             }
         }
     }
+
 }
 
-func (ps *server) closeClient (clientId string) {
+func (ps *server) closeClient (c *client) {
+    clientList, ok := ps.documents[c.docId]
+    if ok {
+        delete(clientList, c.clientId)
+        if len(clientList) == 0 {
+            delete(ps.documents, c.docId)
+            err := sendRemoveDoc(ps,ps.myHostPort,c.docId)
+            if err != nil {
+                common.LOGE.Println("Error removing doc: " + err.Error())
+            }
+        }
+    } else {
+        common.LOGE.Println("Unrecorded client has closed")
+    }
+    delete(ps.clients, c.clientId)
 }
