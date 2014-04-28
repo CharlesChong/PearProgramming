@@ -19,6 +19,10 @@ type Message struct {
 	Doc 	string
 }
 
+func (msg *Message) ToString () string {
+	return msg.TId + " " + msg.Doc
+}
+
 type AddedDocArgs struct {
 	DocId    string
 	HostPort string
