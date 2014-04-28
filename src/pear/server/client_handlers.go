@@ -4,6 +4,7 @@ import (
     "code.google.com/p/go.net/websocket"
     "common"
     "io"
+    "pear/rpc/serverrpc"
     "strconv"
     "strings"
 )
@@ -104,9 +105,15 @@ func (ps *server) clientReadHandler(c *client) {
                 args := body[1]
                 common.LOGV.Println(msgId + ". " + Cmd + ":" + args)
                 switch Cmd {
-                case "getDoc    ", "vote      ", "complete  ":
+                case getDocCmd, voteCmd, completeCmd:
                     go c.handleResponse(msgId, Cmd, args)
-                case "requestTxn":
+                case requestTxnCmd:
+                    commit, err := ps.ClientRequestTxn(&serverrpc.Message{TId: msgId, Doc: args}, c.docId)
+                    if err != nil {
+                        common.LOGE.Println("Error requesting transaction: " + err.Error())
+                    } else {
+                        websocket.Message.Send(c.ws, requestTxnCmd + msgId + " " + strconv.FormatBool(commit))
+                    }
                 default:
                     common.LOGE.Println("Received unrecognized Cmd from client " + c.clientId + ": " + msg)
                 }

@@ -100,8 +100,13 @@ function serverHandler(e) {
         if (msgId != currTransactionId) {
             console.log("Received response to an incorrect transaction request")
         } else {
-            commited = committing;
-            committing = null;
+            if (args === "true") {
+                committed = committing;
+                committing = null;
+            } else {
+                committing = null;
+                editor.setValue(committed);
+            }
         }
         break;
     default:
