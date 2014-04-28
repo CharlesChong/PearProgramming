@@ -3,7 +3,6 @@ package central
 import (
 	"common"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -24,7 +23,7 @@ type central struct {
 }
 
 func NewCentral(port int) (Central, error) {
-	common.LOGV.Println("Pear Central Starting ", port)
+	common.LOGV.Println("PearCentral on ",port)
 	c := central{}
 	c.port = port
 	c.clientIdCnt = 0
@@ -51,8 +50,7 @@ func NewCentral(port int) (Central, error) {
 	rpc.HandleHTTP()
 	go http.Serve(listener, nil)
 
-	http.HandleFunc("/", c.NewClient)
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
+	common.LOGV.Println("EXITING PEAR CENTRAL")
 	return &c, nil
 }
 

@@ -32,6 +32,7 @@ type server struct {
 }
 
 func NewServer(centralHostPort string, port int) (Server, error) {
+	common.LOGV.Println("PearServer on",port)
 	ps := server{}
 	ps.centralHostPort = centralHostPort
 	ps.myHostPort = fmt.Sprintf("localhost:%d", port)
@@ -128,7 +129,7 @@ func participantInit(ps *server, myHostPort string) error {
 }
 
 func (ps *server) AddedDoc(args *serverrpc.AddedDocArgs, reply *serverrpc.AddedDocReply) error {
-	common.LOGV.Println("Added Doc",args)
+	// common.LOGV.Println("$Added Doc",args)
 	reply.DocId = args.DocId
 	reply.Teammates = make(map[string]bool)
 	reply.Status = serverrpc.OK
@@ -152,7 +153,7 @@ func (ps *server) AddedDoc(args *serverrpc.AddedDocArgs, reply *serverrpc.AddedD
 }
 
 func (ps *server) RemovedDoc(args *serverrpc.RemovedDocArgs, reply *serverrpc.RemovedDocReply) error {
-	common.LOGV.Println("Removed Doc: ", args)
+	// common.LOGV.Println("$Removed Doc: ", args)
 	reply.DocId = args.DocId
 	reply.Status = serverrpc.OK
 	serverMap, ok := ps.docToServerMap[args.DocId]
@@ -169,7 +170,7 @@ func (ps *server) RemovedDoc(args *serverrpc.RemovedDocArgs, reply *serverrpc.Re
 }
 
 func (ps *server) GetDoc(args *serverrpc.GetDocArgs, reply *serverrpc.GetDocReply) error {
-	common.LOGV.Println("GetDoc: ", args)
+	// common.LOGV.Println("$GetDoc: ", args)
 	reply.DocId = args.DocId
 
 	clientList, ok := ps.documents[args.DocId]
@@ -190,7 +191,7 @@ func (ps *server) GetDoc(args *serverrpc.GetDocArgs, reply *serverrpc.GetDocRepl
 }
 
 func (ps *server) VotePhase(args *serverrpc.VoteArgs, reply *serverrpc.VoteReply) error {
-	common.LOGV.Println("Vote: ", args.Msg)
+	// common.LOGV.Println("$Vote: ", args.Msg)
 	reply.Msg = args.Msg
 	var vote bool 
 	var finalVote bool = true
@@ -228,7 +229,7 @@ func (ps *server) VotePhase(args *serverrpc.VoteArgs, reply *serverrpc.VoteReply
 }
 
 func (ps *server) CompletePhase(args *serverrpc.CompleteArgs, reply *serverrpc.CompleteReply) error {
-	common.LOGV.Println("Complete: ", args.Msg, " commit?", args.Commit)
+	// common.LOGV.Println("$Complete: ", args.Msg, " commit?", args.Commit)
 	reply.Msg = args.Msg
 	clientList, ok := ps.documents[args.DocId]
 	if ok {
@@ -383,7 +384,7 @@ func (ps *server) RPCAddDoc(client *rpc.Client, docId, myHostPort string) error 
 		if err := client.Call("PearCentral.AddDoc", args, &reply); err != nil {
 			return err
 		}
-		common.LOGV.Println("Call:",":",reply)
+		// common.LOGV.Println("$Call AddDoc:",reply)
 		// Check reply from Master
 		if reply.Status == centralrpc.OK {
 			_, ok := ps.docToServerMap[docId]
@@ -458,7 +459,7 @@ func RPCVote(rspChan chan bool,errorCh chan error, msg *serverrpc.Message) rpcFn
 				errorCh <- err
 				return err
 			}
-			common.LOGV.Println("Call: VotePhase ",reply)
+			// common.LOGV.Println("$Call: VotePhase ",reply)
 			// Check reply from Master
 			if reply.Status == serverrpc.OK {
 				rspChan <- reply.Vote
@@ -485,7 +486,7 @@ func RPCComplete(commit bool,msg *serverrpc.Message) rpcFn {
 			if err := client.Call("PearServer.CompletePhase", args, &reply); err != nil {
 				return err
 			}
-			common.LOGV.Println("Call: CompletePhase ",reply)
+			// common.LOGV.Println("$Call: CompletePhase ",reply)
 			// Check reply from Master
 			if reply.Status == serverrpc.OK {
 				return nil

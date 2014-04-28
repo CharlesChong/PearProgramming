@@ -17,6 +17,7 @@ var (
 )
 
 func main() {
+	fmt.Println("PearServer Running....")
 	flag.Parse()
 
 	// Create and start the StorageServer.
