@@ -117,10 +117,11 @@ function serverHandler(e) {
                 committed = committing;
                 committing = null;
                 currTransactionId == null;
-            } else {
                 editor.setValue(committed);
+            } else {
                 committing = null;
                 currTransactionId == null;
+                editor.setValue(committed);
             }
         }
         ws.send("complete  " + msgId + " " + "ok")
@@ -133,10 +134,11 @@ function serverHandler(e) {
                 committed = committing;
                 committing = null;
                 currTransactionId == null;
-            } else {
                 editor.setValue(committed);
+            } else {
                 committing = null;
                 currTransactionId == null;
+                editor.setValue(committed);
             }
         }
         break;
