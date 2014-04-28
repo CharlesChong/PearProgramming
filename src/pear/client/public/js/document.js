@@ -82,9 +82,9 @@ function serverHandler(e) {
     case "setDoc    ":
         settingDoc = true;
         editor.setValue(args);
+        editor.gotoLine(0);
         settingDoc = false;
         committed = args;
-        editor.gotoLine(0);
         ws.send("setDoc    ok");
         break;
     case "getDoc    ":
@@ -100,13 +100,8 @@ function serverHandler(e) {
         var transactionId = transactionIdArr[0];
         var body = args.substr(1 + transactionId.length, args.length);
         if (committing && transactionId !== currTransactionId) {
-            console.log("VOTE NO")
-            console.log(transactionId)
-            console.log(currTransactionId)
-            console.log(committing)
             ws.send("vote      " + msgId + " " + "false")
         } else {
-            console.log("VOTE YES")
             currTransactionId = transactionId
             committing = body
             ws.send("vote      " + msgId + " " + "true")
@@ -125,29 +120,17 @@ function serverHandler(e) {
                 committing = null;
                 currTransactionId == null;
                 editor.setValue(committed);
+                editor.gotoLine(0);
             } else {
                 committing = null;
                 currTransactionId == null;
                 editor.setValue(committed);
+                editor.gotoLine(0);
             }
         }
         ws.send("complete  " + msgId + " " + "ok")
         break;
     case "requestTxn":
-        if (msgId != currTransactionId) {
-            console.log("Received response to an incorrect transaction request")
-        } else {
-            if (args === "true") {
-                committed = committing;
-                committing = null;
-                currTransactionId == null;
-                editor.setValue(committed);
-            } else {
-                committing = null;
-                currTransactionId == null;
-                editor.setValue(committed);
-            }
-        }
         break;
     default:
         console.log("Received unrecognized command")
