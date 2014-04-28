@@ -54,7 +54,7 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
         newClientList := make(map[string]bool)
         newClientList[c.clientId] = true
         ps.documents[c.docId] = newClientList
-        err = sendAddDoc(ps,ps.myHostPort,c.docId)
+        err = ps.sendAddDoc(c.docId)
         if err != nil {
             common.LOGE.Println("Error adding doc: " + err.Error())
         }
@@ -100,7 +100,7 @@ func (ps *server) closeClient (c *client) {
         delete(clientList, c.clientId)
         if len(clientList) == 0 {
             delete(ps.documents, c.docId)
-            err := sendRemoveDoc(ps,ps.myHostPort,c.docId)
+            err := ps.sendRemoveDoc(c.docId)
             if err != nil {
                 common.LOGE.Println("Error removing doc: " + err.Error())
             }

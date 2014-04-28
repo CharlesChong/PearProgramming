@@ -66,10 +66,10 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	}
 
 	// Test Code here! TODO: Remove
-	err = ps.sendAddDoc(&ps,ps.myHostPort,"Hello")
+	err = ps.sendAddDoc("Hello")
 	if ps.myHostPort == "localhost:9001" {
 		common.LOGV.Println("Testing Remove")
-		err = ps.sendRemoveDoc(&ps,ps.myHostPort, "Hello")
+		err = ps.sendRemoveDoc("Hello")
 	}
 
 	http.Handle("/", websocket.Handler(ps.clientConnHandler))
@@ -168,12 +168,12 @@ func (ps *server) CompletePhase(args *serverrpc.CompleteArgs, reply *serverrpc.C
 
 /////////////////////// Sending RPC Calls //////////////////////
 
-func (ps *server) sendAddDoc(myHostPort,docId string) error {
+func (ps *server) sendAddDoc(docId string) error {
 	err := ps.makeRPCCall(RPCAddDoc,ps.centralHostPort,docId)
 	return err
 }
 
-func (ps *server) sendRemoveDoc(myHostPort,docId string) error {
+func (ps *server) sendRemoveDoc(docId string) error {
 	err := ps.makeRPCCall(RPCRemoveDoc,ps.centralHostPort,docId)
 	return err
 }
@@ -369,16 +369,17 @@ func RPCGetDoc(client *rpc.Client, docId, myHostPort string) error  {
 func RPCVote(client *rpc.Client, docId, myHostPort string) error  {
 	for {
 		// Make RPC Call to Master
+		msg := "TMP"
 		args := &serverrpc.VoteArgs{
 			DocId: docId,
-			HostPort: ps.myHostPort,
-			Message: "TMP NOTHING"
+			HostPort: myHostPort,
+			Msg: serverrpc.Message(msg),
 		}
 		var reply serverrpc.VoteReply
 		if err := client.Call("PearServer.VotePhase", args, &reply); err != nil {
 			return err
 		}
-		common.LOGV.Println("Call: VotePhase[",dstHostPort,"]: ",reply)
+		common.LOGV.Println("Call: VotePhase ",reply)
 		// Check reply from Master
 		if reply.Status == serverrpc.OK {
 			return nil
