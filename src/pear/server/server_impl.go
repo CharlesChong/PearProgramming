@@ -3,6 +3,7 @@ package server
 import (
     "code.google.com/p/go.net/websocket"
 	"common"
+	// "errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -12,6 +13,8 @@ import (
 	"strconv"
 	"time"
 )
+
+type rpcFn func(*rpc.Client,string, string) error 
 
 type server struct {
 	centralHostPort string
@@ -63,10 +66,10 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	}
 
 	// Test Code here! TODO: Remove
-	err = sendAddDoc(&ps,ps.myHostPort,"Hello")
+	err = ps.sendAddDoc(&ps,ps.myHostPort,"Hello")
 	if ps.myHostPort == "localhost:9001" {
 		common.LOGV.Println("Testing Remove")
-		err = sendRemoveDoc(&ps,ps.myHostPort, "Hello")
+		err = ps.sendRemoveDoc(&ps,ps.myHostPort, "Hello")
 	}
 
 	http.Handle("/", websocket.Handler(ps.clientConnHandler))
@@ -144,7 +147,6 @@ func (ps *server) RemovedDoc(args *serverrpc.RemovedDocArgs, reply *serverrpc.Re
 func (ps *server) GetDoc(args *serverrpc.GetDocArgs, reply *serverrpc.GetDocReply) error {
 	common.LOGV.Println("GetDoc: ", args)
 	reply.DocId = args.DocId
-
 	reply.Doc = "Fake Doc"
 	reply.Status = serverrpc.OK
 	return nil
@@ -163,60 +165,107 @@ func (ps *server) CompletePhase(args *serverrpc.CompleteArgs, reply *serverrpc.C
 	return nil
 }
 
-func sendAddDoc(ps *server, myHostPort,docId string) error {
-	client, err := ps.dialRPC(ps.centralHostPort)
-	if err != nil {
-		common.LOGE.Println(err)
-		return err
-	}
 
-	for {
-		// Make RPC Call to Master
-		args := &centralrpc.AddDocArgs{
-			DocId: docId,
-			HostPort: myHostPort,
-		}
-		var reply centralrpc.AddDocReply
-		if err := client.Call("PearCentral.AddDoc", args, &reply); err != nil {
-			return err
-		}
-		common.LOGV.Println("Call: AddDoc[",ps.centralHostPort,"]: ",reply)
-		// Check reply from Master
-		if reply.Status == centralrpc.OK {
-			return nil
-		}
+/////////////////////// Sending RPC Calls //////////////////////
 
-		time.Sleep(time.Second)
-	}
+func (ps *server) sendAddDoc(myHostPort,docId string) error {
+	err := ps.makeRPCCall(RPCAddDoc,ps.centralHostPort,docId)
+	return err
 }
 
-func sendRemoveDoc(ps *server, myHostPort, docId string) error {
-	client, err := ps.dialRPC(ps.centralHostPort)
-	if err != nil {
-		common.LOGE.Println(err)
-		return err
-	}
-
-	for {
-		// Make RPC Call to Master
-		args := &centralrpc.RemoveDocArgs{
-			DocId: docId,
-			HostPort: myHostPort,
-		}
-		var reply centralrpc.RemoveDocReply
-		if err := client.Call("PearCentral.RemoveDoc", args, &reply); err != nil {
-			return err
-		}
-
-		// Check reply from Master
-		if reply.Status == centralrpc.OK {
-			common.LOGV.Println(reply)
-			return nil
-		}
-
-		time.Sleep(time.Second)
-	}
+func (ps *server) sendRemoveDoc(myHostPort,docId string) error {
+	err := ps.makeRPCCall(RPCRemoveDoc,ps.centralHostPort,docId)
+	return err
 }
+
+////////////////////////// Client Handler Calls /////////////////
+
+func (ps *server) AddClient(clientId, docId string) serverrpc.Status {
+	clientList, ok := ps.documents[docId]
+	if ok {
+		_, ok2 := clientList[clientId]
+		if !ok2 {
+			clientList[clientId] = true
+			ps.documents[docId] = clientList	
+		} else {
+			return serverrpc.ClientExist
+		}
+		
+	} else {
+		newClientList := make(map[string]bool)
+		newClientList[clientId] = true
+		ps.documents[docId] = newClientList
+	}
+	return serverrpc.OK
+}
+
+///////////////////// Client Handler Calls ///////////////////
+
+func (ps *server) ClientStart2PC () {
+
+}
+
+func (ps *server) sendVotePhase(dstHostPort, docId string) error {
+	err := ps.makeRPCCall(RPCVote,dstHostPort,docId)
+	return err
+
+	
+}
+
+// func (ps *server) ClientCastVote () {
+// 	// Send cast vote
+// }
+
+// func (ps *server) ClientGetDoc (docId string) (string ,error) {
+// 	// Check if server has other clients with document
+// 	clientList, ok := ps.documents[docId]
+// 	if ok {
+// 		var dstClient string
+// 		for client, _ := range clientList {
+// 			if client != ps.myHostPort {
+// 				dstClient = client
+// 				return "", errors.New("TODO: Not complete")
+// 			}
+// 		}
+// 	} 
+
+// 	// Ask Another server for document
+// 	serverList, ok2 := ps.docToServerMap[docId]
+// 	dstServer := ""
+// 	for server, _ := range serverList {
+// 		if server != ps.myHostPort {
+// 			dstServer = server
+// 		}
+// 	}
+// 	if dstServer == "" {
+// 		// No other clients exist for document
+// 		return "", nil
+// 	}
+
+// 	rpcClient, err := ps.dialRPC(ps.centralHostPort)
+// 	if err != nil {
+// 		common.LOGE.Println(err)
+// 		return "", err
+// 	}
+// 	for {
+// 		// Make RPC Call to Master
+// 		args := &serverrpc.GetDocArgs{
+// 			DocId: docId,
+// 			HostPort: ps.myHostPort,
+// 		}
+// 		var reply serverrpc.GetDocReply
+// 		if err := rpcClient.Call("PearServer.GetDoc", args, &reply); err != nil {
+// 			return "", err
+// 		}
+// 		// Check reply from Master
+// 		if reply.Status == serverrpc.OK {
+// 			common.LOGV.Println(reply)
+// 			return reply.Doc, nil
+// 		}
+// 		time.Sleep(time.Second)
+// 	}
+// }
+
 
 func (ps *server) dialRPC(dstHostPort string) (*rpc.Client, error) {
 	// Check if old connection exists
@@ -245,55 +294,95 @@ func (ps *server) dialRPC(dstHostPort string) (*rpc.Client, error) {
 	}
 }
 
-////////////////////////// Client Handler Calls /////////////////
 
-func (ps *server) AddClient(clientId, docId string) serverrpc.Status {
-	clientList, ok := ps.documents[docId]
-	if ok {
-		_, ok2 := clientList[clientId]
-		if !ok2 {
-			clientList[clientId] = true
-			ps.documents[docId] = clientList	
-		} else {
-			return serverrpc.ClientExist
-		}
-		
-	} else {
-		newClientList := make(map[string]bool)
-		newClientList[clientId] = true
-		ps.documents[docId] = newClientList
+func (ps *server) makeRPCCall(rpcCall rpcFn,dstHostPort, docId string) error {
+	rpcClient, err := ps.dialRPC(dstHostPort)
+	if err != nil {
+		common.LOGE.Println(err)
+		return err
 	}
-	return serverrpc.OK
+	err = rpcCall(rpcClient,docId,ps.myHostPort)
+	return err
 }
 
-///////////////////// Client Handler Calls ///////////////////
-
-func (ps *server) Start2PC () {
-
-}
-
-func (ps *server) CastVote () {
-
-}
-
-func (ps *server) GetDoc (docId string) string {
-	// Check if server has other clients with document
-	clientList, ok := ps.documents[docId]
-	if ok {
-		var dstClient string
-		for client, _ := range clientList {
-			if client != ps.myHostPort {
-				dstClient := client
-				break
-			}
+func RPCAddDoc(client *rpc.Client, docId, myHostPort string) error  {
+	for {
+		// Make RPC Call to Master
+		args := &centralrpc.AddDocArgs{
+			DocId: docId,
+			HostPort: myHostPort,
+		};
+		var reply centralrpc.AddDocReply
+		if err := client.Call("PearCentral.AddDoc", args, &reply); err != nil {
+			return err
 		}
-		
-	} 
-
-	// Ask Another server for document
-	serverList, ok2 := ps.docToServerMap[docId]
-	if ok2 {
-
+		common.LOGV.Println("Call:",":",reply)
+		// Check reply from Master
+		if reply.Status == centralrpc.OK {
+			return nil
+		}
+		time.Sleep(time.Second)
 	}
+}
 
+func RPCRemoveDoc(client *rpc.Client, docId, myHostPort string) error  {
+	for {
+		// Make RPC Call to Master
+		args := &centralrpc.RemoveDocArgs{
+			DocId: docId,
+			HostPort: myHostPort,
+		}
+		var reply centralrpc.RemoveDocReply
+		if err := client.Call("PearCentral.RemoveDoc", args, &reply); err != nil {
+			return err
+		}
+
+		// Check reply from Master
+		if reply.Status == centralrpc.OK {
+			common.LOGV.Println(reply)
+			return nil
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func RPCGetDoc(client *rpc.Client, docId, myHostPort string) error  {
+	for {
+		// Make RPC Call to Master
+		args := &serverrpc.GetDocArgs{
+			DocId: docId,
+			HostPort: myHostPort,
+		}
+		var reply serverrpc.GetDocReply
+		if err := client.Call("PearServer.GetDoc", args, &reply); err != nil {
+			return err
+		}
+		// Check reply from Master
+		if reply.Status == serverrpc.OK {
+			common.LOGV.Println(reply)
+			return nil
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func RPCVote(client *rpc.Client, docId, myHostPort string) error  {
+	for {
+		// Make RPC Call to Master
+		args := &serverrpc.VoteArgs{
+			DocId: docId,
+			HostPort: ps.myHostPort,
+			Message: "TMP NOTHING"
+		}
+		var reply serverrpc.VoteReply
+		if err := client.Call("PearServer.VotePhase", args, &reply); err != nil {
+			return err
+		}
+		common.LOGV.Println("Call: VotePhase[",dstHostPort,"]: ",reply)
+		// Check reply from Master
+		if reply.Status == serverrpc.OK {
+			return nil
+		}
+		time.Sleep(time.Second)
+	}
 }

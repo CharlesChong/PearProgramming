@@ -38,6 +38,7 @@ type RemovedDocReply struct {
 
 type GetDocArgs struct {
 	DocId 	string
+	HostPort string
 }
 
 type GetDocReply struct {
@@ -48,11 +49,14 @@ type GetDocReply struct {
 
 type VoteArgs struct {
 	Msg Message
+	DocId string
+	HostPort string
 }
 
 type VoteReply struct {
 	Vote bool
 	Msg  Message
+	Status Status
 }
 
 type CompleteArgs struct {
@@ -62,4 +66,5 @@ type CompleteArgs struct {
 
 type CompleteReply struct {
 	Msg Message
+	Status Status
 }
