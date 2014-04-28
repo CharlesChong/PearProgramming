@@ -6,6 +6,7 @@ var transactionNum = 0;
 var committed = null;
 var committing = null;
 var currTransactionId = null;
+var isChanged = false;
 
 $(function(){
     $.get("http://" + centralHostPort, {docId: docId})
@@ -59,6 +60,13 @@ function setupServer(serverHostPort) {
         ws.send(clientId+"");
         ws.send(docId);
         ws.onmessage = serverHandler;
+        setInterval(function(){
+            if (isChanged) {
+                console.log("RAWR");
+                requestTxn();
+                isChanged = false;
+            }
+        },500);
     }
 }
 
@@ -83,6 +91,7 @@ function serverHandler(e) {
         settingDoc = true;
         editor.setValue(args);
         editor.gotoLine(0);
+        isChanged = false;
         settingDoc = false;
         committed = args;
         ws.send("setDoc    ok");
@@ -121,11 +130,13 @@ function serverHandler(e) {
                 currTransactionId == null;
                 editor.setValue(committed);
                 editor.gotoLine(0);
+                isChanged = false;
             } else {
                 committing = null;
                 currTransactionId == null;
                 editor.setValue(committed);
                 editor.gotoLine(0);
+                isChanged = false;
             }
         }
         ws.send("complete  " + msgId + " " + "ok")
@@ -138,7 +149,7 @@ function serverHandler(e) {
 }
 
 function editorChange(e) {
-    
+    isChanged = true;
 }
 
 function requestTxn() {
