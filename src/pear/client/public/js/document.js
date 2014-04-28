@@ -83,7 +83,7 @@ function serverHandler(e) {
         settingDoc = true;
         editor.setValue(args);
         settingDoc = false;
-        commited = args;
+        committed = args;
         editor.gotoLine(0);
         ws.send("setDoc    ok");
         break;
@@ -94,11 +94,35 @@ function serverHandler(e) {
         if (committing) {
             ws.send("vote      " + msgId + " " + "no")
         } else {
-            committing = args;
+            // get transactionId
+            var transactionIdArr = args.split(" ", 1);
+            if (transactionIdArr.length == 0) {
+                console.log("Received a vote request without a transactionId");
+                return;
+            }
+            currTransactionId = transactionIdArr[0];
+            committing = args.substr(1 + currTransactionId.length, args.length);
             ws.send("vote      " + msgId + " " + "yes")
         }
         break;
     case "complete  ":
+        var transactionIdArr = args.split(" ", 1);
+        if (transactionIdArr.length == 0) {
+            console.log("Received a complete request without a transactionId");
+            return;
+        }
+        transactionId = transactionIdArr[0];
+        if (transactionId === currTransactionId){
+            if (args.substr(1 + transactionId.length, args.length) === "true") {
+                committed = committing;
+                committing = null;
+                currTransactionId == null;
+            } else {
+                editor.setValue(committed);
+                committing = null;
+                currTransactionId == null;
+            }
+        }
         ws.send("complete  " + msgId + " " + "ok")
         break;
     case "requestTxn":
