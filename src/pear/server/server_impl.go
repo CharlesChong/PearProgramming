@@ -178,27 +178,6 @@ func (ps *server) sendRemoveDoc(docId string) error {
 	return err
 }
 
-////////////////////////// Client Handler Calls /////////////////
-
-func (ps *server) AddClient(clientId, docId string) serverrpc.Status {
-	clientList, ok := ps.documents[docId]
-	if ok {
-		_, ok2 := clientList[clientId]
-		if !ok2 {
-			clientList[clientId] = true
-			ps.documents[docId] = clientList	
-		} else {
-			return serverrpc.ClientExist
-		}
-		
-	} else {
-		newClientList := make(map[string]bool)
-		newClientList[clientId] = true
-		ps.documents[docId] = newClientList
-	}
-	return serverrpc.OK
-}
-
 ///////////////////// Client Handler Calls ///////////////////
 
 func (ps *server) ClientStart2PC (docId string) error {

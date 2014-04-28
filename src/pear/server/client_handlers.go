@@ -29,7 +29,7 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
     }
     if err == nil {
         // $TODO: Get text for doc
-        c.sendRequest("setDoc    ", "This is the text for " + c.docId)
+        websocket.Message.Send(ws, "setDoc     This is the text for " + c.docId)
     }
     if err == nil {
         err = websocket.Message.Receive(c.ws, &clientAck)
@@ -38,7 +38,7 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
         common.LOGE.Println("Websocket error during setup: " + err.Error())
         return
     }
-    if (clientAck != "setDoc    0 ok") {
+    if (clientAck != "setDoc    ok") {
         common.LOGE.Println("Did not get setup ack from client");
         return
     }
@@ -93,9 +93,8 @@ func (ps *server) clientReadHandler(c *client) {
                 args := body[1]
                 common.LOGV.Println(msgId + ". " + command + ":" + args)
                 switch command {
-                case "getDoc    ":
-                case "vote      ":
-                case "complete  ":
+                case "getDoc    ", "vote      ", "complete  ":
+                    go c.handleResponse(msgId, command, args)
                 case "requestTxn":
                 default:
                     common.LOGE.Println("Received unrecognized command from client " + c.clientId + ": " + msg)
@@ -123,15 +122,22 @@ func (ps *server) closeClient (c *client) {
     delete(ps.clients, c.clientId)
 }
 
-func (c *client) sendRequest (command string, body string) (chan string, error) {
+func (c *client) sendRequest (command string, body string) (string, error) {
     responseChan := make(chan string)
+    // $TODO: Race condition
     responseId := strconv.Itoa(c.responseNum)
     c.responseNum++
     err := websocket.Message.Send(c.ws, command + responseId + " " + body)
     if err != nil {
-        return nil, err
+        return "", err
     } else {
         c.responseChans[responseId] = responseChan
-        return responseChan, nil
+        response := <-responseChan
+        return response, nil
     }
+}
+
+func (c *client) handleResponse (msgId, command, args string) {
+    c.responseChans[msgId] <- args
+    delete(c.responseChans, msgId)
 }

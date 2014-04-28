@@ -81,8 +81,7 @@ function serverHandler(e) {
         editor.setValue(args);
         settingDoc = false;
         editor.gotoLine(0);
-        console.log("setDoc    " + msgId + " " + "ok")
-        ws.send("setDoc    " + msgId + " " + "ok");
+        ws.send("setDoc    ok");
         break;
     case "getDoc    ":
         ws.send("getDoc    " + msgId + " " + editor.getValue());
