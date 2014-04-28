@@ -10,8 +10,6 @@ const (
 	DocNotExist
 )
 
-type Message string
-
 type AddDocArgs struct {
 	DocId    string
 	HostPort string
