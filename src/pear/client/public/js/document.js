@@ -2,6 +2,7 @@ var ws;
 var clientId;
 var editor;
 var settingDoc = false;
+var transactionNum = 0
 
 $(function(){
     $.get("http://" + centralHostPort, {docId: docId})
@@ -60,29 +61,37 @@ function setupServer(serverHostPort) {
 
 function serverHandler(e) {
     var msg = e.data
-    if (msg.length < 10) {
+    if (msg.length < 12) {
         console.log("Received an improper command :" + msg);
-        return
+        return;
     }
     var command = msg.substr(0, 10);
-    var args = msg.substring(10, msg.length);
-    console.log(command + ":" + args);
+    var body = msg.substring(10, msg.length);
+    var msgIdArr = body.split(" ", 1);
+    if (msgIdArr.length == 0) {
+        console.log("Received a command without an ID");
+        return;
+    }
+    var msgId = msgIdArr[0];
+    var args = msg.substr(11 + msgId.length, msg.length)
+    console.log(msgId + ". " + command + ":" + args);
     switch(command) {
     case "setDoc    ":
         settingDoc = true;
         editor.setValue(args);
         settingDoc = false;
         editor.gotoLine(0);
-        ws.send("setDoc    " + "ok");
+        console.log("setDoc    " + msgId + " " + "ok")
+        ws.send("setDoc    " + msgId + " " + "ok");
         break;
     case "getDoc    ":
-        ws.send("getDoc    " + editor.getValue());
+        ws.send("getDoc    " + msgId + " " + editor.getValue());
         break;
     case "vote      ":
-        ws.send("vote      " + "yes")
+        ws.send("vote      " + msgId + " " + "yes")
         break;
     case "complete  ":
-        ws.send("complete  " + "ok")
+        ws.send("complete  " + msgId + " " + "ok")
         break;
     case "requestTxn":
         break;
@@ -93,6 +102,8 @@ function serverHandler(e) {
 
 function editorChange(e) {
     if (!settingDoc) {
-        ws.send("requestTxn" + e.data.text);
+        var transactionId = clientId + ":" + transactionNum;
+        transactionNum++;
+        ws.send("requestTxn" + transactionId + " " + e.data.text);
     }
 }

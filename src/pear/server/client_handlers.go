@@ -4,17 +4,23 @@ import (
     "code.google.com/p/go.net/websocket"
     "common"
     "io"
+    "strconv"
+    "strings"
 )
 
 type client struct {
     clientId string
     docId string
     ws    *websocket.Conn
+    responseChans map[string]chan string
+    responseNum int
 }
 
 func (ps *server) clientConnHandler(ws *websocket.Conn) {
     // Setup client
     var c = client{}
+    c.responseChans = make(map[string]chan string)
+    c.responseNum = 0
     var clientAck string
     c.ws = ws
     err := websocket.Message.Receive(ws, &c.clientId)
@@ -23,7 +29,7 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
     }
     if err == nil {
         // $TODO: Get text for doc
-        err = websocket.Message.Send(ws, "setDoc    This is the text for " + c.docId)
+        c.sendRequest("setDoc    ", "This is the text for " + c.docId)
     }
     if err == nil {
         err = websocket.Message.Receive(c.ws, &clientAck)
@@ -32,7 +38,7 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
         common.LOGE.Println("Websocket error during setup: " + err.Error())
         return
     }
-    if (clientAck != "setDoc    ok") {
+    if (clientAck != "setDoc    0 ok") {
         common.LOGE.Println("Did not get setup ack from client");
         return
     }
@@ -75,19 +81,25 @@ func (ps *server) clientReadHandler(c *client) {
             ps.closeClient(c)
             return
         }
-        if len(msg) < 10 {
+        if len(msg) < 12 {
             common.LOGE.Println("Received invalid command from client " + c.clientId + ": " + msg)
         } else {
             command := msg[0:10]
-            args := msg[10:len(msg)]
-            common.LOGV.Println(command+":"+args)
-            switch command {
-            case "getDoc    ":
-            case "vote      ":
-            case "complete  ":
-            case "requestTxn":
-            default:
-                common.LOGE.Println("Received unrecognized command from client " + c.clientId + ": " + msg)
+            body := strings.SplitN(msg[10:len(msg)], " ", 2)
+            if len(body) != 2 {
+                common.LOGE.Println("Received command without ID or args from client")
+            } else {
+                msgId := body[0]
+                args := body[1]
+                common.LOGV.Println(msgId + ". " + command + ":" + args)
+                switch command {
+                case "getDoc    ":
+                case "vote      ":
+                case "complete  ":
+                case "requestTxn":
+                default:
+                    common.LOGE.Println("Received unrecognized command from client " + c.clientId + ": " + msg)
+                }
             }
         }
     }
@@ -109,4 +121,17 @@ func (ps *server) closeClient (c *client) {
         common.LOGE.Println("Unrecorded client has closed")
     }
     delete(ps.clients, c.clientId)
+}
+
+func (c *client) sendRequest (command string, body string) (chan string, error) {
+    responseChan := make(chan string)
+    responseId := strconv.Itoa(c.responseNum)
+    c.responseNum++
+    err := websocket.Message.Send(c.ws, command + responseId + " " + body)
+    if err != nil {
+        return nil, err
+    } else {
+        c.responseChans[responseId] = responseChan
+        return responseChan, nil
+    }
 }
