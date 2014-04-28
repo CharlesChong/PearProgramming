@@ -232,7 +232,7 @@ func (c *central) sendRemoveDoc(dstHostPort, myHostPort, docId string) error {
 		}
 		var reply serverrpc.RemovedDocReply
 		common.LOGV.Println("Call RemovedDoc[",dstHostPort,"]: ",reply)
-		if err := client.Call("PearServer.RemoveDoc", args, &reply); err != nil {
+		if err := client.Call("PearServer.RemovedDoc", args, &reply); err != nil {
 			return err
 		}
 		// Check reply from Master
