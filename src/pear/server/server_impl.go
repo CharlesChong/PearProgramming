@@ -192,14 +192,13 @@ func (ps *server) GetDoc(args *serverrpc.GetDocArgs, reply *serverrpc.GetDocRepl
 func (ps *server) VotePhase(args *serverrpc.VoteArgs, reply *serverrpc.VoteReply) error {
 	common.LOGV.Println("Vote: ", args.Msg)
 	reply.Msg = args.Msg
-	var vote bool
-	var finalVote bool
+	var vote bool 
+	var finalVote bool = true
 	clientList, ok := ps.documents[args.DocId]
 	if ok {
 		for client, _ := range clientList {
 			common.LOGV.Println("Before",client,":",args.Msg.ToString())
 			rsp, err := ps.clients[client].sendRequest(voteCmd, args.Msg.ToString())
-			common.LOGV.Println(rsp)
 			if err == nil {
 				vote ,err = strconv.ParseBool(rsp)
 				if err != nil {
@@ -279,7 +278,6 @@ func (ps *server) ClientRequestTxn(msg *serverrpc.Message,docId string) (bool,er
 		for s , _ := range serverList {
 			go ps.makeRPCCall(RPCVote(rpcCh,errorCh,msg),s,docId)
 		}
-
 		for _ , _ = range serverList {
 			select {
 			case res := <- rpcCh:

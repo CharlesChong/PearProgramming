@@ -152,10 +152,7 @@ func (c *client) sendRequest (Cmd string, body string) (string, error) {
         return "", err
     } else {
         c.responseChans[responseId] = responseChan
-        common.LOGV.Println("$A")
         response := <-responseChan
-        common.LOGV.Println("$B")
-
         return response, nil
     }
 }

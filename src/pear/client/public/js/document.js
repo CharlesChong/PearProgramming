@@ -99,15 +99,18 @@ function serverHandler(e) {
         }
         var transactionId = transactionIdArr[0];
         var body = args.substr(1 + transactionId.length, args.length);
-        console.log("$SOMTHING")
         if (committing && transactionId !== currTransactionId) {
+            console.log("VOTE NO")
+            console.log(transactionId)
+            console.log(currTransactionId)
+            console.log(committing)
             ws.send("vote      " + msgId + " " + "false")
         } else {
+            console.log("VOTE YES")
             currTransactionId = transactionId
             committing = body
             ws.send("vote      " + msgId + " " + "true")
         }
-        console.log("$SOMETHING END")
         break;
     case "complete  ":
         var transactionIdArr = args.split(" ", 1);
