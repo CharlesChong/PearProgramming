@@ -249,30 +249,25 @@ func (ps *server) ClientGetDoc(docId string) (string ,error) {
 	if ok {
 		for client, _ := range clientList {
 			if client != ps.myHostPort {
-				return "", errors.New("TODO: Not complete")
+				return "DOCUMENT ON OTHER CLIENT", errors.New("TODO: Not complete")
 			}
 		}
 	} 
 	// Ask Another server for document
 	serverList, ok2 := ps.docToServerMap[docId]
 	if ok2 {
-		dstServer := ""
 		for server, _ := range serverList {
 			if server != ps.myHostPort {
-				dstServer = server
-				break
+				go ps.makeRPCCall(RPCGetDoc(resCh),server,docId)
+				doc := <- resCh
+				return doc, nil
 			}
 		}
-		if dstServer == "" {
-			// No other clients exist for document
-			return "", nil
-		}
-		go ps.makeRPCCall(RPCGetDoc(resCh),dstServer,docId)
-		doc := <- resCh
-		return doc, nil
+		// No Other Pear Servers has Document -> New Document Created
+		return "NEW DOCUMENT: " + docId, nil
 	} else {
 		// New Document
-		return "", nil
+		return "NEW DOCUMENT FROM ERROR: " + docId, errors.New("Doc Not Registered")
 	}
 	
 }

@@ -22,15 +22,23 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
     c.responseChans = make(map[string]chan string)
     c.responseNum = 0
     var clientAck string
+    var docText string
     c.ws = ws
     err := websocket.Message.Receive(ws, &c.clientId)
     if err == nil {
         err = websocket.Message.Receive(ws, &c.docId)
     }
     if err == nil {
+        err = ps.sendAddDoc(c.docId)
+    }
+    if err == nil {
         // $TODO: Get text for doc
-        docText := "This is the text for " + c.docId
-        websocket.Message.Send(ws, "setDoc     " + docText)
+        // docText := "This is the text for " + c.docId
+        docText, err = ps.ClientGetDoc(c.docId)
+        common.LOGV.Println(docText)
+    }
+    if err == nil {
+        err = websocket.Message.Send(ws, "setDoc     " + docText)
     }
     if err == nil {
         err = websocket.Message.Receive(c.ws, &clientAck)
@@ -61,10 +69,6 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
         newClientList := make(map[string]bool)
         newClientList[c.clientId] = true
         ps.documents[c.docId] = newClientList
-        err = ps.sendAddDoc(c.docId)
-        if err != nil {
-            common.LOGE.Println("Error adding doc: " + err.Error())
-        }
     }
 
     ps.clientReadHandler(&c)
