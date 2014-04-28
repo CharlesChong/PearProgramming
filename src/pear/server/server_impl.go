@@ -92,7 +92,7 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	// if ps.myHostPort == "localhost:9001" {
 	// 	msg := serverrpc.Message {
 	// 		TId : "Yo dis my Tid",
-	// 		Doc : "HEY THAR",
+	// 		Body : "HEY THAR",
 	// 	}
 	// 	_, err  = ps.ClientRequestTxn(&msg,"Hello")
 	// }
@@ -191,30 +191,65 @@ func (ps *server) GetDoc(args *serverrpc.GetDocArgs, reply *serverrpc.GetDocRepl
 
 func (ps *server) VotePhase(args *serverrpc.VoteArgs, reply *serverrpc.VoteReply) error {
 	common.LOGV.Println("Vote: ", args.Msg)
+	reply.Msg = args.Msg
+	var vote bool
+	var finalVote bool
 	clientList, ok := ps.documents[args.DocId]
 	if ok {
 		for client, _ := range clientList {
+			common.LOGV.Println("Before",client,":",args.Msg.ToString())
 			rsp, err := ps.clients[client].sendRequest(voteCmd, args.Msg.ToString())
+			common.LOGV.Println(rsp)
 			if err == nil {
-				vote,err := strconv.ParseBool(rsp)
-				reply.Vote = vote
-				reply.Status = serverrpc.OK
+				vote ,err = strconv.ParseBool(rsp)
+				if err != nil {
+					common.LOGE.Println("Invalid Vote",rsp)
+					reply.Status = serverrpc.NotReady
+					reply.Vote = false
+					return nil
+				} else {
+					if !vote {
+						finalVote = false
+					}
+				}
+			} else {
+				common.LOGE.Println(err)
+				reply.Vote = false
+				reply.Status = serverrpc.NotReady
 				return nil
-			} 
-			break
+			}
 		}
+		reply.Vote = finalVote
+		reply.Status = serverrpc.OK
+		return nil
 	} 
 	reply.Vote = false
-	reply.Msg = args.Msg
 	reply.Status = serverrpc.NotReady
 	return nil
 }
 
 func (ps *server) CompletePhase(args *serverrpc.CompleteArgs, reply *serverrpc.CompleteReply) error {
 	common.LOGV.Println("Complete: ", args.Msg, " commit?", args.Commit)
-	// TODO: Do Meaningful Stuff in Complete
 	reply.Msg = args.Msg
-	reply.Status = serverrpc.OK
+	clientList, ok := ps.documents[args.DocId]
+	if ok {
+		for client, _ := range clientList {
+			args.Msg.Body = strconv.FormatBool(args.Commit)
+			rsp, err := ps.clients[client].sendRequest(completeCmd, args.Msg.ToString())
+			if rsp != "ok" {
+				reply.Status = serverrpc.NotReady
+				return nil
+			}
+			if err != nil {
+				common.LOGE.Println(err)
+				reply.Status = serverrpc.NotReady
+				return nil
+			}
+		}
+		reply.Status = serverrpc.OK
+	} else {
+		reply.Status = serverrpc.NotReady
+	}
 	return nil
 }
 
@@ -244,6 +279,7 @@ func (ps *server) ClientRequestTxn(msg *serverrpc.Message,docId string) (bool,er
 		for s , _ := range serverList {
 			go ps.makeRPCCall(RPCVote(rpcCh,errorCh,msg),s,docId)
 		}
+
 		for _ , _ = range serverList {
 			select {
 			case res := <- rpcCh:
@@ -456,6 +492,7 @@ func RPCComplete(commit bool,msg *serverrpc.Message) rpcFn {
 			if reply.Status == serverrpc.OK {
 				return nil
 			}
+			common.LOGV.Println(reply.Status)
 			time.Sleep(time.Second)
 		}
 	}

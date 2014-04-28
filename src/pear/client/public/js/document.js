@@ -91,19 +91,23 @@ function serverHandler(e) {
         ws.send("getDoc    " + msgId + " " + editor.getValue());
         break;
     case "vote      ":
-        if (committing) {
-            ws.send("vote      " + msgId + " " + "no")
-        } else {
-            // get transactionId
-            var transactionIdArr = args.split(" ", 1);
-            if (transactionIdArr.length == 0) {
-                console.log("Received a vote request without a transactionId");
-                return;
-            }
-            currTransactionId = transactionIdArr[0];
-            committing = args.substr(1 + currTransactionId.length, args.length);
-            ws.send("vote      " + msgId + " " + "yes")
+        // get transactionId
+        var transactionIdArr = args.split(" ", 1);
+        if (transactionIdArr.length == 0) {
+            console.log("Received a vote request without a transactionId");
+            return;
         }
+        var transactionId = transactionIdArr[0];
+        var body = args.substr(1 + transactionId.length, args.length);
+        console.log("$SOMTHING")
+        if (committing && transactionId !== currTransactionId) {
+            ws.send("vote      " + msgId + " " + "false")
+        } else {
+            currTransactionId = transactionId
+            committing = body
+            ws.send("vote      " + msgId + " " + "true")
+        }
+        console.log("$SOMETHING END")
         break;
     case "complete  ":
         var transactionIdArr = args.split(" ", 1);

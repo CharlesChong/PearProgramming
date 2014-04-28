@@ -16,11 +16,11 @@ const (
 
 type Message struct {
 	TId		string
-	Doc 	string
+	Body 	string
 }
 
 func (msg *Message) ToString () string {
-	return msg.TId + " " + msg.Doc
+	return msg.TId + " " + msg.Body
 }
 
 type AddedDocArgs struct {

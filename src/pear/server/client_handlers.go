@@ -108,7 +108,7 @@ func (ps *server) clientReadHandler(c *client) {
                 case getDocCmd, voteCmd, completeCmd:
                     go c.handleResponse(msgId, Cmd, args)
                 case requestTxnCmd:
-                    commit, err := ps.ClientRequestTxn(&serverrpc.Message{TId: msgId, Doc: args}, c.docId)
+                    commit, err := ps.ClientRequestTxn(&serverrpc.Message{TId: msgId, Body: args}, c.docId)
                     if err != nil {
                         common.LOGE.Println("Error requesting transaction: " + err.Error())
                     } else {
@@ -150,7 +150,10 @@ func (c *client) sendRequest (Cmd string, body string) (string, error) {
         return "", err
     } else {
         c.responseChans[responseId] = responseChan
+        common.LOGV.Println("$A")
         response := <-responseChan
+        common.LOGV.Println("$B")
+
         return response, nil
     }
 }
