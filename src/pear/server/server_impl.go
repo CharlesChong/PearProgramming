@@ -3,7 +3,7 @@ package server
 import (
     "code.google.com/p/go.net/websocket"
 	"common"
-	// "errors"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -201,20 +201,29 @@ func (ps *server) AddClient(clientId, docId string) serverrpc.Status {
 
 ///////////////////// Client Handler Calls ///////////////////
 
-func (ps *server) ClientStart2PC () {
-
+func (ps *server) ClientStart2PC (docId string) error {
+	// Broadcast Vote to all collaborators
+	serverList, ok := ps.docToServerMap[docId]
+	if ok {
+		for s ,_ := range serverList {
+			err := ps.makeRPCCall(RPCVote("Tmp"),s,docId)
+			if err != nil {
+				return err				
+			}
+		}
+	} else {
+		return errors.New("Invalid doc to Server Map")
+	}
+	return nil
 }
 
-func (ps *server) sendVotePhase(dstHostPort, docId string) error {
-	err := ps.makeRPCCall(RPCVote,dstHostPort,docId)
-	return err
-
-	
+func (ps *server) ClientCastVote () {
+	// Send cast vote
 }
 
-// func (ps *server) ClientCastVote () {
-// 	// Send cast vote
-// }
+/*
+
+*/
 
 // func (ps *server) ClientGetDoc (docId string) (string ,error) {
 // 	// Check if server has other clients with document
@@ -366,24 +375,25 @@ func RPCGetDoc(client *rpc.Client, docId, myHostPort string) error  {
 	}
 }
 
-func RPCVote(client *rpc.Client, docId, myHostPort string) error  {
-	for {
-		// Make RPC Call to Master
-		msg := "TMP"
-		args := &serverrpc.VoteArgs{
-			DocId: docId,
-			HostPort: myHostPort,
-			Msg: serverrpc.Message(msg),
+func RPCVote(msg string) rpcFn {
+	return func (client *rpc.Client, docId, myHostPort string) error  {
+		for {
+			// Make RPC Call to Master
+			args := &serverrpc.VoteArgs{
+				DocId: docId,
+				HostPort: myHostPort,
+				Msg: serverrpc.Message(msg),
+			}
+			var reply serverrpc.VoteReply
+			if err := client.Call("PearServer.VotePhase", args, &reply); err != nil {
+				return err
+			}
+			common.LOGV.Println("Call: VotePhase ",reply)
+			// Check reply from Master
+			if reply.Status == serverrpc.OK {
+				return nil
+			}
+			time.Sleep(time.Second)
 		}
-		var reply serverrpc.VoteReply
-		if err := client.Call("PearServer.VotePhase", args, &reply); err != nil {
-			return err
-		}
-		common.LOGV.Println("Call: VotePhase ",reply)
-		// Check reply from Master
-		if reply.Status == serverrpc.OK {
-			return nil
-		}
-		time.Sleep(time.Second)
 	}
 }

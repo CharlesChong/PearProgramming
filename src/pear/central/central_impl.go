@@ -249,7 +249,6 @@ func (c *central) dialRPC(dstHostPort string) (*rpc.Client, error) {
 	if ok {
 		return oldClient, nil
 	}
-
 	// Initialize new connection
 	var client *rpc.Client
 	var err error
