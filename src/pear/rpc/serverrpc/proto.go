@@ -13,7 +13,11 @@ const (
 	ClientNotExist
 )
 
-type Message string
+
+type Message struct {
+	TId		string
+	Doc 	string
+}
 
 type AddedDocArgs struct {
 	DocId    string
@@ -37,8 +41,8 @@ type RemovedDocReply struct {
 }
 
 type GetDocArgs struct {
-	DocId 	string
-	HostPort string
+	DocId 		string
+	HostPort 	string
 }
 
 type GetDocReply struct {
@@ -48,23 +52,25 @@ type GetDocReply struct {
 }
 
 type VoteArgs struct {
-	Msg Message
-	DocId string
-	HostPort string
+	Msg 		*Message
+	DocId 		string
+	HostPort 	string
 }
 
 type VoteReply struct {
-	Vote bool
-	Msg  Message
-	Status Status
+	Vote 		bool
+	Msg  		*Message
+	Status 		Status
 }
 
 type CompleteArgs struct {
-	Rollback bool
-	Msg      Message
+	Commit	 	bool
+	DocId 	 	string
+	HostPort 	string
+	Msg      	*Message
 }
 
 type CompleteReply struct {
-	Msg Message
-	Status Status
+	Msg 	*Message
+	Status 	Status
 }
