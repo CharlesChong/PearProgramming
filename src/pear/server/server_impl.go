@@ -170,19 +170,43 @@ func (ps *server) RemovedDoc(args *serverrpc.RemovedDocArgs, reply *serverrpc.Re
 
 func (ps *server) GetDoc(args *serverrpc.GetDocArgs, reply *serverrpc.GetDocReply) error {
 	common.LOGV.Println("GetDoc: ", args)
-	// TODO Do meaning stuff in Get Doc
 	reply.DocId = args.DocId
-	reply.Doc = "Fake Doc"
-	reply.Status = serverrpc.OK
+
+	clientList, ok := ps.documents[args.DocId]
+	if ok {
+		for client, _ := range clientList {
+			doc, err := ps.clients[client].sendRequest(getDocCmd, "")
+			if err == nil {
+				reply.Doc = doc
+				reply.Status = serverrpc.OK
+				return nil
+			} 
+			break
+		}
+	} 
+	reply.Doc = "ERROR"
+	reply.Status = serverrpc.NotReady
 	return nil
 }
 
 func (ps *server) VotePhase(args *serverrpc.VoteArgs, reply *serverrpc.VoteReply) error {
 	common.LOGV.Println("Vote: ", args.Msg)
-	// TODO: Do Meaningful stuff in Vote
-	reply.Vote = true
+	clientList, ok := ps.documents[args.DocId]
+	if ok {
+		for client, _ := range clientList {
+			rsp, err := ps.clients[client].sendRequest(voteCmd, args.Msg.ToString())
+			if err == nil {
+				vote,err := strconv.ParseBool(rsp)
+				reply.Vote = vote
+				reply.Status = serverrpc.OK
+				return nil
+			} 
+			break
+		}
+	} 
+	reply.Vote = false
 	reply.Msg = args.Msg
-	reply.Status = serverrpc.OK
+	reply.Status = serverrpc.NotReady
 	return nil
 }
 
