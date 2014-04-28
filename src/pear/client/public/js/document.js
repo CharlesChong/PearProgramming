@@ -91,7 +91,12 @@ function serverHandler(e) {
         ws.send("getDoc    " + msgId + " " + editor.getValue());
         break;
     case "vote      ":
-        ws.send("vote      " + msgId + " " + "yes")
+        if (committing) {
+            ws.send("vote      " + msgId + " " + "no")
+        } else {
+            committing = args;
+            ws.send("vote      " + msgId + " " + "yes")
+        }
         break;
     case "complete  ":
         ws.send("complete  " + msgId + " " + "ok")
@@ -103,9 +108,11 @@ function serverHandler(e) {
             if (args === "true") {
                 committed = committing;
                 committing = null;
+                currTransactionId == null;
             } else {
-                committing = null;
                 editor.setValue(committed);
+                committing = null;
+                currTransactionId == null;
             }
         }
         break;
