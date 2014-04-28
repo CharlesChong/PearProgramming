@@ -2,7 +2,10 @@ var ws;
 var clientId;
 var editor;
 var settingDoc = false;
-var transactionNum = 0
+var transactionNum = 0;
+var committed = null;
+var committing = null;
+var currTransactionId = null;
 
 $(function(){
     $.get("http://" + centralHostPort, {docId: docId})
@@ -80,6 +83,7 @@ function serverHandler(e) {
         settingDoc = true;
         editor.setValue(args);
         settingDoc = false;
+        commited = args;
         editor.gotoLine(0);
         ws.send("setDoc    ok");
         break;
@@ -93,6 +97,12 @@ function serverHandler(e) {
         ws.send("complete  " + msgId + " " + "ok")
         break;
     case "requestTxn":
+        if (msgId != currTransactionId) {
+            console.log("Received response to an incorrect transaction request")
+        } else {
+            commited = committing;
+            committing = null;
+        }
         break;
     default:
         console.log("Received unrecognized command")
@@ -100,9 +110,10 @@ function serverHandler(e) {
 }
 
 function editorChange(e) {
-    if (!settingDoc) {
-        var transactionId = clientId + ":" + transactionNum;
+    if (!settingDoc && !committing) {
+        currTransactionId = clientId + ":" + transactionNum;
         transactionNum++;
-        ws.send("requestTxn" + transactionId + " " + e.data.text);
+        committing = editor.getValue();
+        ws.send("requestTxn" + currTransactionId + " " + committing);
     }
 }

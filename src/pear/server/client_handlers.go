@@ -29,7 +29,8 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
     }
     if err == nil {
         // $TODO: Get text for doc
-        websocket.Message.Send(ws, "setDoc     This is the text for " + c.docId)
+        docText := "This is the text for " + c.docId
+        websocket.Message.Send(ws, "setDoc     " + docText)
     }
     if err == nil {
         err = websocket.Message.Receive(c.ws, &clientAck)
