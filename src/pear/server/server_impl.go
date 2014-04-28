@@ -249,7 +249,12 @@ func (ps *server) ClientGetDoc(docId string) (string ,error) {
 	if ok {
 		for client, _ := range clientList {
 			if client != ps.myHostPort {
-				return "DOCUMENT ON OTHER CLIENT", errors.New("TODO: Not complete")
+				doc, err := ps.clients[client].sendRequest(getDocCmd, "")
+				if err != nil {
+					return "", err
+				} else {
+					return doc, nil
+				}
 			}
 		}
 	} 

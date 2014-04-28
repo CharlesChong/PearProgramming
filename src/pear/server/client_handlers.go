@@ -8,6 +8,13 @@ import (
     "strings"
 )
 
+const (
+    getDocCmd string = "getDoc    "
+    voteCmd string = "vote      "
+    completeCmd string = "complete  "
+    requestTxnCmd string = "requestTxn"
+)
+
 type client struct {
     clientId string
     docId string
@@ -29,13 +36,12 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
         err = websocket.Message.Receive(ws, &c.docId)
     }
     if err == nil {
-        err = ps.sendAddDoc(c.docId)
+        if ps.documents[c.docId] == nil {
+            err = ps.sendAddDoc(c.docId)
+        }
     }
     if err == nil {
-        // $TODO: Get text for doc
-        // docText := "This is the text for " + c.docId
         docText, err = ps.ClientGetDoc(c.docId)
-        common.LOGV.Println(docText)
     }
     if err == nil {
         err = websocket.Message.Send(ws, "setDoc     " + docText)
@@ -87,22 +93,22 @@ func (ps *server) clientReadHandler(c *client) {
             return
         }
         if len(msg) < 12 {
-            common.LOGE.Println("Received invalid command from client " + c.clientId + ": " + msg)
+            common.LOGE.Println("Received invalid Cmd from client " + c.clientId + ": " + msg)
         } else {
-            command := msg[0:10]
+            Cmd := msg[0:10]
             body := strings.SplitN(msg[10:len(msg)], " ", 2)
             if len(body) != 2 {
-                common.LOGE.Println("Received command without ID or args from client")
+                common.LOGE.Println("Received Cmd without ID or args from client")
             } else {
                 msgId := body[0]
                 args := body[1]
-                common.LOGV.Println(msgId + ". " + command + ":" + args)
-                switch command {
+                common.LOGV.Println(msgId + ". " + Cmd + ":" + args)
+                switch Cmd {
                 case "getDoc    ", "vote      ", "complete  ":
-                    go c.handleResponse(msgId, command, args)
+                    go c.handleResponse(msgId, Cmd, args)
                 case "requestTxn":
                 default:
-                    common.LOGE.Println("Received unrecognized command from client " + c.clientId + ": " + msg)
+                    common.LOGE.Println("Received unrecognized Cmd from client " + c.clientId + ": " + msg)
                 }
             }
         }
@@ -127,12 +133,12 @@ func (ps *server) closeClient (c *client) {
     delete(ps.clients, c.clientId)
 }
 
-func (c *client) sendRequest (command string, body string) (string, error) {
+func (c *client) sendRequest (Cmd string, body string) (string, error) {
     responseChan := make(chan string)
     // $TODO: Race condition
     responseId := strconv.Itoa(c.responseNum)
     c.responseNum++
-    err := websocket.Message.Send(c.ws, command + responseId + " " + body)
+    err := websocket.Message.Send(c.ws, Cmd + responseId + " " + body)
     if err != nil {
         return "", err
     } else {
@@ -142,7 +148,7 @@ func (c *client) sendRequest (command string, body string) (string, error) {
     }
 }
 
-func (c *client) handleResponse (msgId, command, args string) {
+func (c *client) handleResponse (msgId, Cmd, args string) {
     c.responseChans[msgId] <- args
     delete(c.responseChans, msgId)
 }
