@@ -6,6 +6,7 @@ var committed = null;
 var committing = null;
 var currTransactionId = null;
 var isChanged = false;
+var chatTransactions = [];
 
 $(function(){
     $.get("http://" + centralHostPort, {docId: docId})
@@ -105,19 +106,25 @@ function serverHandler(e) {
         ws.send("getDoc    " + msgId + " " + editor.getValue());
         break;
     case "vote      ":
-        // get transactionId
-        var transactionIdArr = args.split(" ", 1);
-        if (transactionIdArr.length == 0) {
-            console.log("Received a vote request without a transactionId");
+        // get transactionId and transactionType
+        var transactionArr = args.split(" ", 2);
+        if (transactionArr.length != 2) {
+            console.log("Received a vote request without a transactionId or transactionType");
             return;
         }
-        var transactionId = transactionIdArr[0];
-        var body = args.substr(1 + transactionId.length, args.length);
-        if (committing && transactionId !== currTransactionId) {
-            ws.send("vote      " + msgId + " " + "false")
-        } else {
-            currTransactionId = transactionId
-            committing = body
+        var transactionId = transactionArr[0];
+        var transactionType = transactionArr[1]
+        var body = args.substr(2 + transactionId.length + transactionType.length, args.length);
+        if (transactionType === "updateDoc") {
+            if (committing && transactionId !== currTransactionId) {
+                ws.send("vote      " + msgId + " " + "false")
+            } else {
+                currTransactionId = transactionId
+                committing = body
+                ws.send("vote      " + msgId + " " + "true")
+            }
+        } else if (transactionType === "chat") {
+            chatTransactions[transactionId] = body;
             ws.send("vote      " + msgId + " " + "true")
         }
         break;
@@ -139,6 +146,12 @@ function serverHandler(e) {
                 currTransactionId == null;
                 setText(committed);
             }
+        } else if (chatTransactions[transactionId]) {
+            console.log("CHAT:" + chatTransactions[transactionId])
+            chatValue = chatTransactions[transactionId]
+            rawr = $(".chatContent")
+            $(".chatContent").text(chatValue)
+            delete chatTransactions[transactionId];
         }
         ws.send("complete  " + msgId + " " + "ok")
         break;
@@ -158,7 +171,7 @@ function requestTxn() {
         currTransactionId = clientId + ":" + transactionNum;
         transactionNum++;
         committing = editor.getValue();
-        ws.send("requestTxn" + currTransactionId + " " + committing);
+        ws.send("requestTxn" + currTransactionId + " updateDoc " + committing);
     }
 }
 
@@ -166,6 +179,20 @@ function setText(text) {
     var oldCursor = editor.selection.getCursor();
     editor.setValue(text);
     editor.moveCursorToPosition(oldCursor);
-    //editor.clearSelection();
+    editor.clearSelection();
     isChanged = false;
+}
+
+function requestChat(text) {
+    var chatTransactionId = clientId + ":" + transactionNum;
+    transactionNum++;
+    ws.send("requestTxn" + chatTransactionId + " chat " + text);
+}
+
+function chatInputKeyUp(){
+    if (event.keyCode === 13) {
+        requestChat(event.target.value);
+        event.target.value="";
+        rawr = event
+    }
 }

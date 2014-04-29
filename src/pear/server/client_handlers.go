@@ -25,6 +25,7 @@ type client struct {
 }
 
 func (ps *server) clientConnHandler(ws *websocket.Conn) {
+    common.LOGV.Println("$WEBSOCKET HANDLER")
     // Setup client
     var c = client{}
     c.responseChans = make(map[string]chan string)
@@ -39,13 +40,17 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
     if err == nil {
         if ps.documents[c.docId] == nil {
             err = ps.sendAddDoc(c.docId)
+            common.LOGV.Println("$NEW DOC SEND")
         }
     }
     if err == nil {
         docText, err = ps.ClientGetDoc(c.docId)
+        common.LOGV.Println("$GOT DOC")
     }
     if err == nil {
+        common.LOGV.Println("$SETTING DOC")
         err = websocket.Message.Send(ws, "setDoc     " + docText)
+        common.LOGV.Println("$DOC SET")
     }
     if err == nil {
         err = websocket.Message.Receive(c.ws, &clientAck)
@@ -58,6 +63,7 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
         common.LOGE.Println("Did not get setup ack from client");
         return
     }
+    common.LOGV.Println("$SETUP DONE")
     // Store information
     ps.clients[c.clientId] = &c
     clientList, ok := ps.documents[c.docId]
@@ -82,13 +88,14 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
 }
 
 func (ps *server) clientReadHandler(c *client) {
+    common.LOGV.Println("$CLIENT READ HANDLER")
     // Read handler
     for {
         var msg string
         err := websocket.Message.Receive(c.ws, &msg)
         if err != nil {
             if err != io.EOF {
-                common.LOGV.Println("Websocket error: " + err.Error())
+                common.LOGE.Println("Websocket error: " + err.Error())
             }
             ps.closeClient(c)
             return
@@ -140,6 +147,7 @@ func (ps *server) closeClient (c *client) {
         common.LOGE.Println("Unrecorded client has closed")
     }
     delete(ps.clients, c.clientId)
+    common.LOGV.Println(ps.documents) //$
 }
 
 func (c *client) sendRequest (Cmd string, body string) (string, error) {
