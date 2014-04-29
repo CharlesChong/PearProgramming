@@ -10,25 +10,7 @@ var chatTransactions = [];
 var username = localStorage.username ? localStorage.username : null;
 
 $(function(){
-    $.get("http://" + centralHostPort, {docId: docId})
-        .done(function(data) {
-            if (data === "No available pear servers"){
-                alert("No available pear servers");
-            } else {
-                var reply = data.split(" ", 2);
-                if (reply.length != 2) {
-                    alert("Received improper setup information");
-                    console.log(data);
-                } else {
-                    clientId = (reply[0]);
-                    setupServer(reply[1]);                    
-                }
-
-            }
-        }).fail(function(data) {
-            alert("Failed to retrieve server information");
-            console.log(data);
-        });
+    setupServer();
     setupGUI();
 });
 
@@ -71,13 +53,43 @@ function setupGUI() {
     editor.focus();
 }
 
-function setupServer(serverHostPort) {
+function setupServer() {
+    console.log("setting up server!")//%
+    $.get("http://" + centralHostPort, {docId: docId})
+        .done(function(data) {
+            if (data === "No available pear servers"){
+                alert("There are no available pear servers :(");
+            } else {
+                console.log(reply);//%
+                var reply = data.split(" ", 2);
+                if (reply.length != 2) {
+                    alert("Received improper setup information :(");
+                    console.log(data);
+                } else {
+                    clientId = (reply[0]);
+                    setupWebsocket(reply[1]);                    
+                }
+            }
+        }).fail(function(data) {
+            alert("Failed to retrieve server information :(");
+            console.log(data);
+        });
+}
+
+function setupWebsocket(serverHostPort) {
     console.log("Pear server host port: " + serverHostPort);
     ws = new WebSocket("ws://" + serverHostPort, ["Message"]);
+    ws.onerror = function () {
+        alert("An error has occurred connecting to a pear server :(");
+    }
     ws.onopen = function () {
         ws.send(clientId+"");
         ws.send(docId);
         ws.onmessage = serverHandler;
+        ws.onclose = function () {
+            alert("Lost connection with server, I will attempt to reconnect");
+            setupServer();
+        }
         setInterval(function(){
             if (isChanged) {
                 requestTxn();
