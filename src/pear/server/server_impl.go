@@ -101,7 +101,7 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	// }
 
 	// Test 4: Dead Pear Server
-	// err = ps.sendAddDoc("Hello")
+	err = ps.sendAddDoc("Hello")
 	// time.Sleep(time.Second )
 
 	// if ps.myHostPort == "localhost:9001" {
@@ -112,8 +112,6 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	// 		time.Sleep(time.Second)
 	// 	}
 	// }
-
-
 
 	http.Handle("/", websocket.Handler(ps.clientConnHandler))
 	go http.ListenAndServe(":" + strconv.Itoa(port), nil)
@@ -269,6 +267,11 @@ func (ps *server) CompletePhase(args *serverrpc.CompleteArgs, reply *serverrpc.C
 	return nil
 }
 
+func (ps *server) CheckAlive(args *serverrpc.CheckAliveArgs, reply *serverrpc.CheckAliveReply) error {
+	reply.Status = serverrpc.OK
+	return nil
+}
+
 ///////////////////// Client Handler Calls ///////////////////
 /////////////////////// Sending RPC Calls //////////////////////
 
@@ -351,6 +354,7 @@ func (ps *server) ClientGetDoc(docId string) (string ,error) {
 	}
 	
 }
+
 
 func (ps *server) makeRPCCall(rpcCall rpcFn,dstHostPort, docId string) error {
 	rpcClient, err := ps.dialRPC(dstHostPort)

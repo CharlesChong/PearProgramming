@@ -27,10 +27,11 @@ type central struct {
 	// Counter for creating clientIds
 	clientIdCnt int
 	port        int
+	myHostPort  string
 }
 
 func NewCentral(port int) (Central, error) {
-	common.LOGV.Println("PearCentral on ",port)
+	common.LOGV.Println("$PearCentral on ",port)
 	c := central{}
 	c.port = port
 	c.clientIdCnt = 0
@@ -38,10 +39,10 @@ func NewCentral(port int) (Central, error) {
 	c.serverMap = make(map[string]map[string]bool)
 	c.connMap = make(map[string]*rpc.Client)
 
-	myHostPort := fmt.Sprintf("localhost:%d", port)
+	c.myHostPort = fmt.Sprintf("localhost:%d", port)
 
 	// Create the server socket that will listen for incoming RPCs.
-	listener, err := net.Listen("tcp", myHostPort)
+	listener, err := net.Listen("tcp", c.myHostPort)
 	if err != nil {
 		return nil, err
 	}
@@ -59,14 +60,13 @@ func NewCentral(port int) (Central, error) {
 
 	http.HandleFunc("/", c.NewClient)
 	http.ListenAndServe(":"+strconv.Itoa(port), nil)
-
 	return &c, nil
 }
 
 // TODO : Added heartbeat
 
 func (c *central) AddDoc(args *centralrpc.AddDocArgs, reply *centralrpc.AddDocReply) error {
-	common.LOGV.Println("AddDoc: ",args)
+	common.LOGV.Println("$Request AddDoc: ",args)
 	reply.DocId = args.DocId
 	reply.Status = centralrpc.OK
 	stat1 := addToMap(c.docMap, args.DocId, args.HostPort)
@@ -108,7 +108,7 @@ func addToMap(m map[string]map[string]bool, key1, key2 string) centralrpc.Status
 }
 
 func (c *central) RemoveDoc(args *centralrpc.RemoveDocArgs, reply *centralrpc.RemoveDocReply) error {
-	common.LOGV.Println("RemoveDoc: ",args)
+	common.LOGV.Println("$Request RemoveDoc: ",args)
 	reply.DocId = args.DocId
 	reply.Status = centralrpc.OK
 	
@@ -155,7 +155,7 @@ func removeMap(m map[string]map[string]bool, key1, key2 string, isDocMap bool) c
 }
 
 func (c *central) AddServer(args *centralrpc.AddServerArgs, reply *centralrpc.AddServerReply) error {
-	common.LOGV.Println("Server ", args.HostPort, "Added.")
+	common.LOGV.Println("$Server ", args.HostPort, "Added.")
 	_, ok := c.serverMap[args.HostPort]
 	if !ok {
 		c.serverMap[args.HostPort] = make(map[string]bool)
@@ -225,7 +225,7 @@ func (c *central) sendAddedDoc(dstHostPort, myHostPort, docId string) error {
 			c.handleDead(dstHostPort)
 			return err
 		}
-		common.LOGV.Println("Call AddedDoc[",dstHostPort,"]: ",reply)
+		common.LOGV.Println("$Broadcast AddedDoc[",dstHostPort,"]: ",reply)
 		// Check reply from Master
 		if reply.Status == serverrpc.OK {
 			return nil
@@ -251,11 +251,11 @@ func (c *central) sendRemoveDoc(dstHostPort, myHostPort, docId string) error {
 			HostPort: myHostPort,
 		}
 		var reply serverrpc.RemovedDocReply
-		common.LOGV.Println("Call RemovedDoc[",dstHostPort,"]: ",reply)
 		if err := client.Call("PearServer.RemovedDoc", args, &reply); err != nil {
 			c.handleDead(dstHostPort)
 			return err
 		}
+		common.LOGV.Println("$Broadcast RemovedDoc[",dstHostPort,"]: ",reply)
 		// Check reply from Master
 		if reply.Status == serverrpc.OK {
 			return nil
@@ -263,6 +263,32 @@ func (c *central) sendRemoveDoc(dstHostPort, myHostPort, docId string) error {
 			common.LOGE.Println("Doc ",docId," does not exist.")
 			return nil
 		}
+		time.Sleep(time.Second)
+	}
+}
+
+func (c *central) sendCheckAlive(dstHostPort string) error {
+	client, err := c.dialRPC(dstHostPort)
+	if err != nil {
+		common.LOGE.Println(err)
+		return err
+	}
+	
+	for {
+		// Make RPC Call to Master
+		args := &serverrpc.CheckAliveArgs{
+			HostPort: c.myHostPort,
+		}
+		var reply serverrpc.CheckAliveReply
+		if err := client.Call("PearServer.CheckAlive", args, &reply); err != nil {
+			c.handleDead(dstHostPort)
+			return err
+		}
+		common.LOGV.Println("$CheckAlive[",dstHostPort,"]: ",reply)
+		// Check reply from Master
+		if reply.Status == serverrpc.OK {
+			return nil
+		} 
 		time.Sleep(time.Second)
 	}
 }

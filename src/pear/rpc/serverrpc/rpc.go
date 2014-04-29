@@ -6,6 +6,7 @@ type RemoteServer interface {
 	AddedDoc(*AddedDocArgs, *AddedDocReply) error
 	RemovedDoc(*RemovedDocArgs, *RemovedDocReply) error
 	GetDoc(*GetDocArgs, *GetDocReply) error
+	CheckAlive(*CheckAliveArgs,*CheckAliveReply) error
 }
 
 type Server struct {
