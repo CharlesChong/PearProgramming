@@ -169,7 +169,7 @@ func (ps *server) AddedDoc(args *serverrpc.AddedDocArgs, reply *serverrpc.AddedD
 }
 
 func (ps *server) RemovedDoc(args *serverrpc.RemovedDocArgs, reply *serverrpc.RemovedDocReply) error {
-	// common.LOGV.Println("$Removed Doc: ", args)
+	common.LOGV.Println("$Removed Doc: ", args)
 	reply.DocId = args.DocId
 	reply.Status = serverrpc.OK
 	serverMap, ok := ps.docToServerMap[args.DocId]
@@ -177,11 +177,18 @@ func (ps *server) RemovedDoc(args *serverrpc.RemovedDocArgs, reply *serverrpc.Re
 		_, ok2 := serverMap[args.HostPort]
 		if ok2 {
 			delete(serverMap, args.HostPort)
-			ps.docToServerMap[args.DocId] = serverMap
+			if len(serverMap) == 0 {
+				common.LOGV.Println("$A")
+				delete(ps.docToServerMap, args.DocId)
+			} else {
+				common.LOGV.Println("$B")
+				ps.docToServerMap[args.DocId] = serverMap
+			}
 			return nil
 		}
 	}
 	reply.Status = serverrpc.DocNotExist
+	common.LOGV.Println("$C")
 	return nil
 }
 
@@ -318,35 +325,48 @@ func (ps *server) ClientRequestTxn(msg *serverrpc.Message,docId string) (bool,er
 }
 
 func (ps *server) ClientGetDoc(docId string) (string ,error) {
+	common.LOGV.Println("$1")
+	common.LOGV.Println(ps.documents)//$
 	// Check if server has other clients with document
 	resCh := make(chan string)
 	clientList, ok := ps.documents[docId]
+	common.LOGV.Println(clientList)//$
+	common.LOGV.Println(ok)//$
 	if ok {
 		for client, _ := range clientList {
+			common.LOGV.Println("$2")
 			if client != ps.myHostPort {
 				doc, err := ps.clients[client].sendRequest(getDocCmd, "")
 				if err != nil {
+					common.LOGV.Println("$3")
 					return "", err
 				} else {
+					common.LOGV.Println("$4")
 					return doc, nil
 				}
 			}
 		}
 	} 
+	common.LOGV.Println("$5")
 	// Ask Another server for document
 	serverList, ok2 := ps.docToServerMap[docId]
 	if ok2 {
 		for server, _ := range serverList {
+			common.LOGV.Println("$6")
 			if server != ps.myHostPort {
+				common.LOGV.Println("$$6")
 				go ps.makeRPCCall(RPCGetDoc(resCh),server,docId)
 				doc := <- resCh
+				common.LOGV.Println("$7")
 				return doc, nil
 			}
 		}
+		common.LOGV.Println("$8")
 		// No Other Pear Servers has Document -> New Document Created
 		return "NEW DOCUMENT: " + docId, nil
 	} else {
 		// New Document
+		common.LOGV.Println("$9")
 		return "NEW DOCUMENT FROM ERROR: " + docId, errors.New("Doc Not Registered")
 	}
 	
@@ -407,9 +427,10 @@ func (ps *server) RPCAddDoc(client *rpc.Client, docId, myHostPort string) error 
 			if !ok {
 				ps.docToServerMap[docId] = make(map[string]bool)
 			}
-			for k,_ := range reply.Teammates {
+			ps.docToServerMap[docId] = reply.Teammates
+			/*for k,_ := range reply.Teammates {
 				ps.docToServerMap[docId][k] = true
-			}
+			}*/
 			return nil
 		} else if reply.Status == centralrpc.DocExist {
 			common.LOGE.Println("Doc ", docId," already Exist")
@@ -434,6 +455,7 @@ func RPCRemoveDoc(client *rpc.Client, docId, myHostPort string) error  {
 		// common.LOGV.Println("$Call Remove:",reply)
 		// Check reply from Master
 		if reply.Status == centralrpc.OK {
+			// $TODO: delete(ps.docToServerMap)
 			return nil
 		} else if reply.Status == centralrpc.DocNotExist {
 			common.LOGE.Println("DocNotExist ",docId," error")

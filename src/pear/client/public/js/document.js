@@ -166,6 +166,6 @@ function setText(text) {
     var oldCursor = editor.selection.getCursor();
     editor.setValue(text);
     editor.moveCursorToPosition(oldCursor);
-    //editor.clearSelection();
+    editor.clearSelection();
     isChanged = false;
 }
