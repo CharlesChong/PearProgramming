@@ -26,6 +26,9 @@
 }
 .docName{
     color:white;
+    text-overflow:ellipsis;
+    overflow-x:hidden;
+    width:100%;
 }
 .titleImg{
     float:left;
@@ -60,4 +63,7 @@
 .chatUsername{
     margin-right:7px;
     font-weight:bold;
+}
+.chat{
+    margin-top:5px;
 }
