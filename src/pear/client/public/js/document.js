@@ -105,20 +105,23 @@ function serverHandler(e) {
         ws.send("getDoc    " + msgId + " " + editor.getValue());
         break;
     case "vote      ":
-        // get transactionId
-        var transactionIdArr = args.split(" ", 1);
-        if (transactionIdArr.length == 0) {
-            console.log("Received a vote request without a transactionId");
+        // get transactionId and transactionType
+        var transactionArr = args.split(" ", 2);
+        if (transactionArr.length != 2) {
+            console.log("Received a vote request without a transactionId or transactionType");
             return;
         }
-        var transactionId = transactionIdArr[0];
-        var body = args.substr(1 + transactionId.length, args.length);
-        if (committing && transactionId !== currTransactionId) {
-            ws.send("vote      " + msgId + " " + "false")
-        } else {
-            currTransactionId = transactionId
-            committing = body
-            ws.send("vote      " + msgId + " " + "true")
+        var transactionId = transactionArr[0];
+        var transactionType = transactionArr[1]
+        var body = args.substr(2 + transactionId.length + transactionType.length, args.length);
+        if (transactionType === "updateDoc") {
+            if (committing && transactionId !== currTransactionId) {
+                ws.send("vote      " + msgId + " " + "false")
+            } else {
+                currTransactionId = transactionId
+                committing = body
+                ws.send("vote      " + msgId + " " + "true")
+            }
         }
         break;
     case "complete  ":
@@ -158,7 +161,7 @@ function requestTxn() {
         currTransactionId = clientId + ":" + transactionNum;
         transactionNum++;
         committing = editor.getValue();
-        ws.send("requestTxn" + currTransactionId + " " + committing);
+        ws.send("requestTxn" + currTransactionId + " updateDoc " + committing);
     }
 }
 
