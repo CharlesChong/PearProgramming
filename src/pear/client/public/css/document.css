@@ -39,7 +39,6 @@
 .chatContent{
     overflow-y:scroll;
     overflow-x:auto;
-    overflow-wrap:break-word;
     height:500px;
 }
 .panel-body{
@@ -55,6 +54,8 @@
 }
 .chatEntry{
     margin-bottom:3px;
+    overflow-wrap:break-word;
+    width:100%;
 }
 .chatUsername{
     margin-right:7px;
