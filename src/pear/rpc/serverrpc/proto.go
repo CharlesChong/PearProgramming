@@ -23,6 +23,14 @@ func (msg *Message) ToString () string {
 	return msg.TId + " " + msg.Body
 }
 
+type CheckAliveArgs struct {
+	HostPort string
+}
+
+type CheckAliveReply struct {
+	Status Status
+}
+
 type AddedDocArgs struct {
 	DocId    string
 	HostPort string
