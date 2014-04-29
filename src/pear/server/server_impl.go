@@ -113,6 +113,10 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	// 	}
 	// }
 
+	// if ps.myHostPort != "localhost:9001" {
+	// 	ps.handleDead("localhost:9001")
+	// }
+
 	http.Handle("/", websocket.Handler(ps.clientConnHandler))
 	go http.ListenAndServe(":" + strconv.Itoa(port), nil)
 
@@ -285,6 +289,30 @@ func (ps *server) sendRemoveDoc(docId string) error {
 	return err
 }
 
+func (ps *server) handleDead(deadHostPort string) {
+	client, err := ps.dialRPC(ps.centralHostPort)
+	if err != nil {
+		common.LOGE.Println(err)
+		return 
+	}
+	
+	for {
+		// Make RPC Call to Master
+		args := &centralrpc.RemoveServerArgs{
+			HostPort: deadHostPort,
+		}
+		var reply centralrpc.RemoveServerReply
+		if err := client.Call("PearCentral.RemoveServer", args, &reply); err != nil {
+			return 
+		}
+		// common.LOGV.Println("$Call Remove Server:",reply)
+		if reply.Status == centralrpc.OK {
+			return 
+		}
+		time.Sleep(time.Second)
+	}
+}
+
 // Client Request Txn:
 // Begin 2PC
 // Returns true when will Commit
@@ -354,7 +382,6 @@ func (ps *server) ClientGetDoc(docId string) (string ,error) {
 	}
 	
 }
-
 
 func (ps *server) makeRPCCall(rpcCall rpcFn,dstHostPort, docId string) error {
 	rpcClient, err := ps.dialRPC(dstHostPort)
@@ -438,6 +465,7 @@ func RPCRemoveDoc(client *rpc.Client, docId, myHostPort string) error  {
 		// common.LOGV.Println("$Call Remove:",reply)
 		// Check reply from Master
 		if reply.Status == centralrpc.OK {
+			
 			return nil
 		} else if reply.Status == centralrpc.DocNotExist {
 			common.LOGE.Println("DocNotExist ",docId," error")
@@ -522,3 +550,4 @@ func RPCComplete(commit bool,msg *serverrpc.Message) rpcFn {
 		}
 	}
 }
+

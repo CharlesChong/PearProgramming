@@ -4,7 +4,7 @@ type RemoteCentral interface {
 	AddDoc(*AddDocArgs, *AddDocReply) error
 	RemoveDoc(*RemoveDocArgs, *RemoveDocReply) error
 	AddServer(*AddServerArgs, *AddServerReply) error
-	RemoveServer(*RemoverServerArgs,*RemoveServerReply) error
+	RemoveServer(*RemoveServerArgs,*RemoveServerReply) error
 }
 
 type Central struct {
