@@ -7,6 +7,7 @@ var committing = null;
 var currTransactionId = null;
 var isChanged = false;
 var chatTransactions = [];
+var username = localStorage.username ? localStorage.username : null;
 
 $(function(){
     $.get("http://" + centralHostPort, {docId: docId})
@@ -61,6 +62,12 @@ function setupGUI() {
         });
     });
     $("#openSidePanelButton").click();
+    if (!username) {
+        $(".chat").hide();
+        $(".enterUsername").show();
+    } else {
+        $(".enterUsername").hide();
+    }
     editor.focus();
 }
 
@@ -147,8 +154,10 @@ function serverHandler(e) {
                 setText(committed);
             }
         } else if (chatTransactions[transactionId]) {
-            console.log("CHAT:" + chatTransactions[transactionId])
-            $(".chatContent").append("<div class='chatEntry'><span class='chatUsername'>Charles</span><span class='chatText'>" + chatTransactions[transactionId] + "</span></div>")
+            var body = chatTransactions[transactionId];
+            var chatUsername = body.split(" ", 1)[0];
+            var chatText = body.substr(1 + chatUsername.length, body.length);
+            $(".chatContent").append("<div class='chatEntry'><span class='chatUsername'>" + chatUsername + "</span><span class='chatText'>" + chatText + "</span></div>");
             delete chatTransactions[transactionId];
         }
         ws.send("complete  " + msgId + " " + "ok")
@@ -189,8 +198,18 @@ function requestChat(text) {
 
 function chatInputKeyUp(){
     if (event.keyCode === 13) {
-        requestChat(event.target.value);
+        requestChat(username + " " + event.target.value);
         event.target.value="";
         rawr = event
+    }
+}
+
+function enterUsernameInputKeyUp(){    
+    if (event.keyCode === 13) {
+        localStorage.username = event.target.value;
+        username = localStorage.username;
+        $(".enterUsername").hide();
+        $(".chat").show();
+        $(".chatInput")[1].focus();
     }
 }
