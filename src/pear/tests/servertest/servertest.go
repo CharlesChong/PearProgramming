@@ -30,15 +30,15 @@ func main() {
 	// Test Code here!
 	// TODO Remove test code
 	// Test 1: Add doc
-	err = ps.sendAddDoc("Hello")
+	err = ps.ClientAddDoc("Hello")
 	if ps.myHostPort == "localhost:9001" {
 		common.LOGV.Println("Testing Remove")
-		err = ps.sendRemoveDoc("Hello")
+		err = ps.ClientRemoveDoc("Hello")
 	}
 
 	// Test 2: Get Doc
 	// var doc string
-	// err = ps.sendAddDoc("Hello")
+	// err = ps.ClientAddDoc("Hello")
 	// if ps.myHostPort == "localhost:9001" {
 	// 	doc , err = ps.ClientGetDoc("Hello")
 	// 	if err != nil {
@@ -49,7 +49,7 @@ func main() {
 	// }
 
 	// Test 3: 2PC begin
-	// err = ps.sendAddDoc("Hello")
+	// err = ps.ClientAddDoc("Hello")
 	// time.Sleep(time.Second*5)
 	// if ps.myHostPort == "localhost:9001" {
 	// 	msg := serverrpc.Message {
@@ -60,14 +60,14 @@ func main() {
 	// }
 
 	// Test 4: Dead Pear Server
-	// err = ps.sendAddDoc("Hello")
+	// err = ps.ClientAddDoc("Hello")
 	// time.Sleep(time.Second )
 
 	// if ps.myHostPort == "localhost:9001" {
 		// common.LOGV.Println("Testing Add")
 		// for {
 		// 	common.LOGV.Println("Sending..")
-		// 	err = ps.sendAddDoc("Hello")
+		// 	err = ps.ClientAddDoc("Hello")
 		// 	time.Sleep(time.Second * 5)
 		// }
 	// }
