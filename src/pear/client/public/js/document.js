@@ -148,9 +148,7 @@ function serverHandler(e) {
             }
         } else if (chatTransactions[transactionId]) {
             console.log("CHAT:" + chatTransactions[transactionId])
-            chatValue = chatTransactions[transactionId]
-            rawr = $(".chatContent")
-            $(".chatContent").text(chatValue)
+            $(".chatContent").append("<div class='chatEntry'><span class='chatUsername'>Charles</span><span class='chatText'>" + chatTransactions[transactionId] + "</span></div>")
             delete chatTransactions[transactionId];
         }
         ws.send("complete  " + msgId + " " + "ok")

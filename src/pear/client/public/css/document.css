@@ -38,9 +38,14 @@
 }
 .chatContent{
     overflow-y:scroll;
+    overflow-x:auto;
+    overflow-wrap:break-word;
     height:500px;
 }
 .panel-body{
+    padding:7px;
+}
+.panel-heading{
     padding:7px;
 }
 .chatInput{
@@ -49,5 +54,9 @@
     border:none;
 }
 .chatEntry{
-
+    margin-bottom:3px;
+}
+.chatUsername{
+    margin-right:7px;
+    font-weight:bold;
 }
