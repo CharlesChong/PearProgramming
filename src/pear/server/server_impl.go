@@ -100,6 +100,20 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	// 	_, err  = ps.ClientRequestTxn(&msg,"Hello")
 	// }
 
+	// Test 4: Dead Pear Server
+	// err = ps.sendAddDoc("Hello")
+	// time.Sleep(time.Second )
+
+	// if ps.myHostPort == "localhost:9001" {
+	// 	common.LOGV.Println("Testing Add")
+	// 	for {
+	// 		common.LOGV.Println("Sending..")
+	// 		err = ps.sendAddDoc("Hello")
+	// 		time.Sleep(time.Second)
+	// 	}
+	// }
+
+
 
 	http.Handle("/", websocket.Handler(ps.clientConnHandler))
 	go http.ListenAndServe(":" + strconv.Itoa(port), nil)
@@ -397,6 +411,9 @@ func (ps *server) RPCAddDoc(client *rpc.Client, docId, myHostPort string) error 
 				ps.docToServerMap[docId][k] = true
 			}
 			return nil
+		} else if reply.Status == centralrpc.DocExist {
+			common.LOGE.Println("Doc ", docId," already Exist")
+			return nil
 		}
 		time.Sleep(time.Second)
 	}
@@ -414,9 +431,13 @@ func RPCRemoveDoc(client *rpc.Client, docId, myHostPort string) error  {
 		if err := client.Call("PearCentral.RemoveDoc", args, &reply); err != nil {
 			return err
 		}
+		// common.LOGV.Println("$Call Remove:",reply)
 		// Check reply from Master
 		if reply.Status == centralrpc.OK {
 			common.LOGV.Println(reply)
+			return nil
+		} else if reply.Status == centralrpc.DocNotExist {
+			common.LOGE.Println("DocNotExist ",docId," error")
 			return nil
 		}
 		time.Sleep(time.Second)

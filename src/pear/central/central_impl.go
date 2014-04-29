@@ -63,6 +63,8 @@ func NewCentral(port int) (Central, error) {
 	return &c, nil
 }
 
+// TODO : Added heartbeat
+
 func (c *central) AddDoc(args *centralrpc.AddDocArgs, reply *centralrpc.AddDocReply) error {
 	common.LOGV.Println("AddDoc: ",args)
 	reply.DocId = args.DocId
@@ -227,6 +229,9 @@ func (c *central) sendAddedDoc(dstHostPort, myHostPort, docId string) error {
 		// Check reply from Master
 		if reply.Status == serverrpc.OK {
 			return nil
+		} else if reply.Status == serverrpc.DocExist {
+			common.LOGE.Println("Doc ",docId," Already Exist")
+			return nil
 		}
 		time.Sleep(time.Second)
 	}
@@ -253,6 +258,9 @@ func (c *central) sendRemoveDoc(dstHostPort, myHostPort, docId string) error {
 		}
 		// Check reply from Master
 		if reply.Status == serverrpc.OK {
+			return nil
+		} else if reply.Status == serverrpc.DocNotExist {
+			common.LOGE.Println("Doc ",docId," does not exist.")
 			return nil
 		}
 		time.Sleep(time.Second)
@@ -302,9 +310,13 @@ func (c *central) handleDead(serverId string) {
 						}
 					}
 				}
+				// Remove dead server from docMap
+				delete(teammate, serverId)
+				c.docMap[docId] = teammate
 			}
-			
 		}
+		// Remove dead server from serverMap
+		delete(c.serverMap,serverId)
 	} else {
 		common.LOGE.Println("Server ",serverId," does not exist")
 	}
