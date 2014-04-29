@@ -157,11 +157,8 @@ func (c *central) AddServer(args *centralrpc.AddServerArgs, reply *centralrpc.Ad
 	_, ok := c.serverMap[args.HostPort]
 	if !ok {
 		c.serverMap[args.HostPort] = make(map[string]bool)
-		reply.Status = centralrpc.OK
-	} else {
-		reply.Status = centralrpc.NotReady
 	}
-
+	reply.Status = centralrpc.OK
 	return nil
 }
 
