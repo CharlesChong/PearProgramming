@@ -24,3 +24,30 @@
     height:32px;
     width:32px;
 }
+#docName{
+    color:white;
+}
+#titleImg{
+    float:left;
+    margin-right:5px;
+}
+#title{
+    font-size:30px;
+    color:#00CC00;
+    font-family:"consolas","Lucida Console", Monaco, monospace;
+}
+#chatContent{
+    overflow-y:scroll;
+    height:500px;
+}
+.panel-body{
+    padding:7px;
+}
+#chatInput{
+    outline:none;
+    width:100%;
+    border:none;
+}
+.chatEntry{
+
+}

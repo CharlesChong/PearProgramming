@@ -147,7 +147,15 @@ function serverHandler(e) {
                 setText(committed);
             }
         } else if (chatTransactions[transactionId]) {
-            alert(chatTransactions[transactionId]);
+            console.log("CHAT:" + chatTransactions[transactionId])
+            chatValue = chatTransactions[transactionId]
+            rawr = $("#chatContent")
+            $("#chatContent").text(chatValue)
+            $.pageslide({ direction: "left", speed:0, modal: true , href: "#sidePanel"});
+            $.pageslide.close();
+            $.pageslide({ direction: "left", speed:0, modal: true , href: "#sidePanel"});
+            $.pageslide({ direction: "left", speed:500, modal: true , href: "#sidePanel"});
+            $("#chatInput").focus()
             delete chatTransactions[transactionId];
         }
         ws.send("complete  " + msgId + " " + "ok")
@@ -184,4 +192,12 @@ function requestChat(text) {
     var chatTransactionId = clientId + ":" + transactionNum;
     transactionNum++;
     ws.send("requestTxn" + chatTransactionId + " chat " + text);
+}
+
+function chatInputKeyUp(){
+    if (event.keyCode === 13) {
+        requestChat(event.target.value);
+        event.target.value="";
+        rawr = event
+    }
 }
