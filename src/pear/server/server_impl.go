@@ -101,7 +101,7 @@ func NewServer(centralHostPort string, port int) (Server, error) {
 	// }
 
 	// Test 4: Dead Pear Server
-	err = ps.sendAddDoc("Hello")
+	// err = ps.sendAddDoc("Hello")
 	// time.Sleep(time.Second )
 
 	// if ps.myHostPort == "localhost:9001" {
