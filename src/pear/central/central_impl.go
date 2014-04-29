@@ -3,6 +3,7 @@ package central
 import (
 	"common"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -55,6 +56,10 @@ func NewCentral(port int) (Central, error) {
 	// serve requests in a background goroutine.
 	rpc.HandleHTTP()
 	go http.Serve(listener, nil)
+
+	http.HandleFunc("/", c.NewClient)
+	http.ListenAndServe(":"+strconv.Itoa(port), nil)
+
 	return &c, nil
 }
 
@@ -161,13 +166,20 @@ func (c *central) AddServer(args *centralrpc.AddServerArgs, reply *centralrpc.Ad
 }
 
 func (c *central) NewClient(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	if (r.Form["docId"] != nil) && (len(r.Form["docId"]) > 0) {
-		// var docId = r.Form["docId"][0]
-		// $TODO: Actually return something meaningful
-		fmt.Fprintf(w, strconv.Itoa(c.clientIdCnt)+" localhost:9000")
-		// $TODO: Race condition here
-		c.clientIdCnt++
+	if len(c.serverMap) == 0 {
+		fmt.Fprintf(w, "No available pear servers")
+	} else {
+		serverIdx := rand.Intn(len(c.serverMap))
+		for hostPort, _ := range c.serverMap {
+			if serverIdx == 0 {
+				fmt.Fprintf(w, strconv.Itoa(c.clientIdCnt)+" "+ hostPort)
+				// $TODO: Race condition here
+				c.clientIdCnt++
+				break
+			} else {
+				serverIdx--
+			}
+		}
 	}
 }
 
