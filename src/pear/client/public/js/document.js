@@ -11,9 +11,19 @@ var isChanged = false;
 $(function(){
     $.get("http://" + centralHostPort, {docId: docId})
         .done(function(data) {
-            var reply = data.split(" ", 2);
-            clientId = (reply[0]);
-            setupServer(reply[1]);
+            if (data === "No available pear servers"){
+                alert("No available pear servers");
+            } else {
+                var reply = data.split(" ", 2);
+                if (reply.length != 2) {
+                    alert("Received improper setup information");
+                    console.log(data);
+                } else {
+                    clientId = (reply[0]);
+                    setupServer(reply[1]);                    
+                }
+
+            }
         }).fail(function(data) {
             alert("Failed to retrieve server information");
             console.log(data);
@@ -55,6 +65,7 @@ function setupGUI() {
 }
 
 function setupServer(serverHostPort) {
+    console.log("Pear server host port: " + serverHostPort);
     ws = new WebSocket("ws://" + serverHostPort, ["Message"]);
     ws.onopen = function () {
         ws.send(clientId+"");
@@ -62,7 +73,6 @@ function setupServer(serverHostPort) {
         ws.onmessage = serverHandler;
         setInterval(function(){
             if (isChanged) {
-                console.log("RAWR");
                 requestTxn();
                 isChanged = false;
             }
