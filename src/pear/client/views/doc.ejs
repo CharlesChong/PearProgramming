@@ -24,13 +24,18 @@
             <h1 class="title">Pear Programming</h1>
         </div>
         <h1 class="docName"><%= docId %></h1>
-        <div class="panel panel-info">
-            <div class="panel-heading">
-                <div class="chatContent"></div>
+        <div class="chat">
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <div class="chatContent"></div>
+                </div>
+                <div class="panel-body">
+                    <input class="chatInput" type="text" autocomplete="off" placeholder="Type here to chat..." onkeyup="chatInputKeyUp()">
+                </div>
             </div>
-            <div class="panel-body">
-                <input class="chatInput" type="text" autocomplete="off" placeholder="Type here to chat..." onkeyup="chatInputKeyUp()">
-            </div>
+        </div>
+        <div class="enterUsername">
+            <input type="text" placeholder="Enter a username..." class="form-control" onkeyup="enterUsernameInputKeyUp()">
         </div>
     </div>
     <script src="/js/lib/jquery.pageslide.min.js"></script>

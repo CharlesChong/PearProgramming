@@ -7,27 +7,10 @@ var committing = null;
 var currTransactionId = null;
 var isChanged = false;
 var chatTransactions = [];
+var username = localStorage.username ? localStorage.username : null;
 
 $(function(){
-    $.get("http://" + centralHostPort, {docId: docId})
-        .done(function(data) {
-            if (data === "No available pear servers"){
-                alert("No available pear servers");
-            } else {
-                var reply = data.split(" ", 2);
-                if (reply.length != 2) {
-                    alert("Received improper setup information");
-                    console.log(data);
-                } else {
-                    clientId = (reply[0]);
-                    setupServer(reply[1]);                    
-                }
-
-            }
-        }).fail(function(data) {
-            alert("Failed to retrieve server information");
-            console.log(data);
-        });
+    setupServer();
     setupGUI();
 });
 
@@ -61,16 +44,52 @@ function setupGUI() {
         });
     });
     $("#openSidePanelButton").click();
+    if (!username) {
+        $(".chat").hide();
+        $(".enterUsername").show();
+    } else {
+        $(".enterUsername").hide();
+    }
     editor.focus();
 }
 
-function setupServer(serverHostPort) {
+function setupServer() {
+    console.log("setting up server!")//%
+    $.get("http://" + centralHostPort, {docId: docId})
+        .done(function(data) {
+            if (data === "No available pear servers"){
+                alert("There are no available pear servers :(");
+            } else {
+                console.log(reply);//%
+                var reply = data.split(" ", 2);
+                if (reply.length != 2) {
+                    alert("Received improper setup information :(");
+                    console.log(data);
+                } else {
+                    clientId = (reply[0]);
+                    setupWebsocket(reply[1]);                    
+                }
+            }
+        }).fail(function(data) {
+            alert("Failed to retrieve server information :(");
+            console.log(data);
+        });
+}
+
+function setupWebsocket(serverHostPort) {
     console.log("Pear server host port: " + serverHostPort);
     ws = new WebSocket("ws://" + serverHostPort, ["Message"]);
+    ws.onerror = function () {
+        alert("An error has occurred connecting to a pear server :(");
+    }
     ws.onopen = function () {
         ws.send(clientId+"");
         ws.send(docId);
         ws.onmessage = serverHandler;
+        ws.onclose = function () {
+            alert("Lost connection with server, I will attempt to reconnect");
+            setupServer();
+        }
         setInterval(function(){
             if (isChanged) {
                 requestTxn();
@@ -147,8 +166,10 @@ function serverHandler(e) {
                 setText(committed);
             }
         } else if (chatTransactions[transactionId]) {
-            console.log("CHAT:" + chatTransactions[transactionId])
-            $(".chatContent").append("<div class='chatEntry'><span class='chatUsername'>Charles</span><span class='chatText'>" + chatTransactions[transactionId] + "</span></div>")
+            var body = chatTransactions[transactionId];
+            var chatUsername = body.split(" ", 1)[0];
+            var chatText = body.substr(1 + chatUsername.length, body.length);
+            $(".chatContent").append("<div class='chatEntry'><span class='chatUsername'>" + chatUsername + "</span><span class='chatText'>" + chatText + "</span></div>");
             delete chatTransactions[transactionId];
         }
         ws.send("complete  " + msgId + " " + "ok")
@@ -189,8 +210,18 @@ function requestChat(text) {
 
 function chatInputKeyUp(){
     if (event.keyCode === 13) {
-        requestChat(event.target.value);
+        requestChat(username + " " + event.target.value);
         event.target.value="";
         rawr = event
+    }
+}
+
+function enterUsernameInputKeyUp(){    
+    if (event.keyCode === 13) {
+        localStorage.username = event.target.value;
+        username = localStorage.username;
+        $(".enterUsername").hide();
+        $(".chat").show();
+        $(".chatInput")[1].focus();
     }
 }
