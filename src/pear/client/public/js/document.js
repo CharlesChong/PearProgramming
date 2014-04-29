@@ -17,7 +17,7 @@ $(function(){
 function setupGUI() {
     editor = ace.edit("editor");
     editor.setTheme("ace/theme/solarized_dark");
-    editor.getSession().setMode("ace/mode/javascript");
+    editor.getSession().setMode("ace/mode/golang");
     editor.getSession().setUseWrapMode(true);
     editor.getSession().on('change', editorChange);
 
@@ -54,13 +54,11 @@ function setupGUI() {
 }
 
 function setupServer() {
-    console.log("setting up server!")//%
     $.get("http://" + centralHostPort, {docId: docId})
         .done(function(data) {
             if (data === "No available pear servers"){
                 alert("There are no available pear servers :(");
             } else {
-                console.log(reply);//%
                 var reply = data.split(" ", 2);
                 if (reply.length != 2) {
                     alert("Received improper setup information :(");
@@ -224,4 +222,10 @@ function enterUsernameInputKeyUp(){
         $(".chat").show();
         $(".chatInput")[1].focus();
     }
+}
+
+function selectLanguage() {
+    rawr = event
+    language = event.target.options[event.target.selectedIndex].value;
+    editor.getSession().setMode("ace/mode/" + language);
 }
