@@ -434,7 +434,6 @@ func RPCRemoveDoc(client *rpc.Client, docId, myHostPort string) error  {
 		// common.LOGV.Println("$Call Remove:",reply)
 		// Check reply from Master
 		if reply.Status == centralrpc.OK {
-			common.LOGV.Println(reply)
 			return nil
 		} else if reply.Status == centralrpc.DocNotExist {
 			common.LOGE.Println("DocNotExist ",docId," error")

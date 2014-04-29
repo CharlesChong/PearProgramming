@@ -1,7 +1,6 @@
 var ws;
 var clientId;
 var editor;
-var settingDoc = false;
 var transactionNum = 0;
 var committed = null;
 var committing = null;
@@ -98,11 +97,7 @@ function serverHandler(e) {
     console.log(msgId + ". " + command + ":" + args);
     switch(command) {
     case "setDoc    ":
-        settingDoc = true;
-        editor.setValue(args);
-        editor.gotoLine(0);
-        isChanged = false;
-        settingDoc = false;
+        setText(args);
         committed = args;
         ws.send("setDoc    ok");
         break;
@@ -138,15 +133,11 @@ function serverHandler(e) {
                 committed = committing;
                 committing = null;
                 currTransactionId == null;
-                editor.setValue(committed);
-                editor.gotoLine(0);
-                isChanged = false;
+                setText(committed);
             } else {
                 committing = null;
                 currTransactionId == null;
-                editor.setValue(committed);
-                editor.gotoLine(0);
-                isChanged = false;
+                setText(committed);
             }
         }
         ws.send("complete  " + msgId + " " + "ok")
@@ -163,10 +154,18 @@ function editorChange(e) {
 }
 
 function requestTxn() {
-    if (!settingDoc && !committing) {
+    if (!committing) {
         currTransactionId = clientId + ":" + transactionNum;
         transactionNum++;
         committing = editor.getValue();
         ws.send("requestTxn" + currTransactionId + " " + committing);
     }
+}
+
+function setText(text) {
+    var oldCursor = editor.selection.getCursor();
+    editor.setValue(text);
+    editor.moveCursorToPosition(oldCursor);
+    //editor.clearSelection();
+    isChanged = false;
 }
