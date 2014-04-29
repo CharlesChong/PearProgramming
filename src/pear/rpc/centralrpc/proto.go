@@ -38,3 +38,11 @@ type AddServerArgs struct {
 type AddServerReply struct {
 	Status Status
 }
+
+type RemoveServerArgs struct {
+	HostPort string
+}
+
+type RemoveServerReply struct {
+	Status Status
+}

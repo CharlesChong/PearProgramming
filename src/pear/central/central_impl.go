@@ -167,6 +167,13 @@ func (c *central) AddServer(args *centralrpc.AddServerArgs, reply *centralrpc.Ad
 	return nil
 }
 
+func (c *central) RemoveServer(args *centralrpc.RemoveServerArgs, reply *centralrpc.RemoveServerReply) error {
+	common.LOGV.Println("$Server ", args.HostPort, "Removed.")
+	c.handleDead(args.HostPort)
+	reply.Status = centralrpc.OK
+	return nil
+}
+
 func (c *central) NewClient(w http.ResponseWriter, r *http.Request) {
 	if len(c.serverMap) == 0 {
 		fmt.Fprintf(w, "No available pear servers")
@@ -307,6 +314,7 @@ func (c *central) dialRPC(dstHostPort string) (*rpc.Client, error) {
 		client, err = rpc.DialHTTP("tcp", dstHostPort)
 		if err != nil {
 			if tries >= maxFail {
+				c.handleDead(dstHostPort)
 				return nil ,err
 			}
 			time.Sleep(time.Second)
