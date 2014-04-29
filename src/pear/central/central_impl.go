@@ -63,8 +63,6 @@ func NewCentral(port int) (Central, error) {
 	return &c, nil
 }
 
-// TODO : Added heartbeat
-
 func (c *central) AddDoc(args *centralrpc.AddDocArgs, reply *centralrpc.AddDocReply) error {
 	common.LOGV.Println("$Request AddDoc: ",args)
 	reply.DocId = args.DocId
@@ -181,9 +179,15 @@ func (c *central) NewClient(w http.ResponseWriter, r *http.Request) {
 		serverIdx := rand.Intn(len(c.serverMap))
 		for hostPort, _ := range c.serverMap {
 			if serverIdx == 0 {
-				fmt.Fprintf(w, strconv.Itoa(c.clientIdCnt)+" "+ hostPort)
-				// $TODO: Race condition here
-				c.clientIdCnt++
+				err := c.sendCheckAlive(hostPort)
+				if err == nil {
+					fmt.Fprintf(w, strconv.Itoa(c.clientIdCnt)+" "+ hostPort)
+					// $TODO: Race condition here
+					c.clientIdCnt++
+				} else {
+					c.handleDead(hostPort)
+					c.NewClient(w,r)
+				}
 				break
 			} else {
 				serverIdx--
