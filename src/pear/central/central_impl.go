@@ -120,8 +120,8 @@ func (c *central) RemoveDoc(args *centralrpc.RemoveDocArgs, reply *centralrpc.Re
 		}
 	}
 
-	stat1 := removeMap(c.docMap, args.DocId, args.HostPort)
-	stat2 := removeMap(c.serverMap, args.HostPort, args.DocId)
+	stat1 := removeMap(c.docMap, args.DocId, args.HostPort,true)
+	stat2 := removeMap(c.serverMap, args.HostPort, args.DocId,false)
 	if stat1 == centralrpc.DocNotExist || stat2 == centralrpc.DocNotExist {
 		reply.Status = centralrpc.DocNotExist
 	}
@@ -129,7 +129,7 @@ func (c *central) RemoveDoc(args *centralrpc.RemoveDocArgs, reply *centralrpc.Re
 	return nil
 }
 
-func removeMap(m map[string]map[string]bool, key1, key2 string) centralrpc.Status {
+func removeMap(m map[string]map[string]bool, key1, key2 string, isDocMap bool) centralrpc.Status {
 	// Update docMap
 	old, ok := m[key1]
 	if !ok {
@@ -140,7 +140,7 @@ func removeMap(m map[string]map[string]bool, key1, key2 string) centralrpc.Statu
 			// Remove current collaborator from list
 			delete(old, key2)
 			m[key1] = old
-			if len(old) == 0 {
+			if isDocMap && len(old) == 0 {
 				// Disappear if all collaborators disappear
 				delete(m,key1)
 			}

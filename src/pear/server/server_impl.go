@@ -416,7 +416,6 @@ func RPCRemoveDoc(client *rpc.Client, docId, myHostPort string) error  {
 		}
 		// Check reply from Master
 		if reply.Status == centralrpc.OK {
-			common.LOGV.Println(reply)
 			return nil
 		}
 		time.Sleep(time.Second)
