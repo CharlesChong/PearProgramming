@@ -19,7 +19,19 @@
     <span id="openSidePanelButton" class="btn btn-warning">&#10010;</span>
     <div id="sidePanel" style="display:none">
         <span id="closeSidePanelButton" class="btn btn-warning">&#10006</span>
-        <h1><%= docId %></h1>
+        <div class="titleContainer">
+            <img class="titleImg" src="/img/pear.png">
+            <h1 class="title">Pear Programming</h1>
+        </div>
+        <h1 class="docName"><%= docId %></h1>
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <div class="chatContent"></div>
+            </div>
+            <div class="panel-body">
+                <input class="chatInput" type="text" autocomplete="off" placeholder="Type here to chat..." onkeyup="chatInputKeyUp()">
+            </div>
+        </div>
     </div>
     <script src="/js/lib/jquery.pageslide.min.js"></script>
 </body>
