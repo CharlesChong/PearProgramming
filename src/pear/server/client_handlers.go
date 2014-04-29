@@ -38,7 +38,7 @@ func (ps *server) clientConnHandler(ws *websocket.Conn) {
     }
     if err == nil {
         if ps.documents[c.docId] == nil {
-            err = ps.sendAddDoc(c.docId)
+            err = ps.ClientAddDoc(c.docId)
         }
     }
     if err == nil {
@@ -131,7 +131,7 @@ func (ps *server) closeClient (c *client) {
         delete(clientList, c.clientId)
         if len(clientList) == 0 {
             delete(ps.documents, c.docId)
-            err := ps.sendRemoveDoc(c.docId)
+            err := ps.ClientRemoveDoc(c.docId)
             if err != nil {
                 common.LOGE.Println("Error removing doc: " + err.Error())
             }
