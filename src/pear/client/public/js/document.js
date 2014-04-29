@@ -6,6 +6,7 @@ var committed = null;
 var committing = null;
 var currTransactionId = null;
 var isChanged = false;
+var chatTransactions = [];
 
 $(function(){
     $.get("http://" + centralHostPort, {docId: docId})
@@ -122,6 +123,9 @@ function serverHandler(e) {
                 committing = body
                 ws.send("vote      " + msgId + " " + "true")
             }
+        } else if (transactionType === "chat") {
+            chatTransactions[transactionId] = body;
+            ws.send("vote      " + msgId + " " + "true")
         }
         break;
     case "complete  ":
@@ -142,6 +146,9 @@ function serverHandler(e) {
                 currTransactionId == null;
                 setText(committed);
             }
+        } else if (chatTransactions[transactionId]) {
+            alert(chatTransactions[transactionId]);
+            delete chatTransactions[transactionId];
         }
         ws.send("complete  " + msgId + " " + "ok")
         break;
@@ -171,4 +178,10 @@ function setText(text) {
     editor.moveCursorToPosition(oldCursor);
     editor.clearSelection();
     isChanged = false;
+}
+
+function requestChat(text) {
+    var chatTransactionId = clientId + ":" + transactionNum;
+    transactionNum++;
+    ws.send("requestTxn" + chatTransactionId + " chat " + text);
 }
