@@ -31,8 +31,10 @@ type server struct {
 	docToServerMap  map[string]map[string]bool
 }
 
+var LOGV = common.LOGV
+
 func NewServer(centralHostPort string, port int) (Server, error) {
-	common.LOGV.Println("PearServer on",port)
+	LOGV.Println("PearServer on",port)
 	ps := server{}
 	ps.centralHostPort = centralHostPort
 	ps.myHostPort = fmt.Sprintf("localhost:%d", port)

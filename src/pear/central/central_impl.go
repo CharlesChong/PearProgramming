@@ -13,11 +13,17 @@ import (
 )
 
 type central struct {
+	// Representations:
+	// Server - hostport
+	// Doc - document name (docId)
+
 	// Doc -> Server Map: Used for document teammate queries
 	docMap 		map[string]map[string]bool // doc -> serv list
 	// Server -> Doc Map: Used for server failure lookup
 	serverMap   map[string]map[string]bool // serv -> doc list
+	// Remembers initalized connections
 	connMap 	map[string]*rpc.Client
+	// Counter for creating clientIds
 	clientIdCnt int
 	port        int
 }
@@ -202,6 +208,7 @@ func (c *central) sendAddedDoc(dstHostPort, myHostPort, docId string) error {
 		}
 		var reply serverrpc.AddedDocReply
 		if err := client.Call("PearServer.AddedDoc", args, &reply); err != nil {
+			c.handleDead(dstHostPort)
 			return err
 		}
 		common.LOGV.Println("Call AddedDoc[",dstHostPort,"]: ",reply)
@@ -229,6 +236,7 @@ func (c *central) sendRemoveDoc(dstHostPort, myHostPort, docId string) error {
 		var reply serverrpc.RemovedDocReply
 		common.LOGV.Println("Call RemovedDoc[",dstHostPort,"]: ",reply)
 		if err := client.Call("PearServer.RemovedDoc", args, &reply); err != nil {
+			c.handleDead(dstHostPort)
 			return err
 		}
 		// Check reply from Master
@@ -261,5 +269,31 @@ func (c *central) dialRPC(dstHostPort string) (*rpc.Client, error) {
 			c.connMap[dstHostPort] = client
 			return client, nil
 		}
+	}
+}
+
+func (c *central) handleDead(serverId string) {
+	common.LOGV.Println("Handling Dead ",serverId)
+	docList, ok := c.serverMap[serverId]
+	if ok {
+		// Update Everyone: Remove all docs from dead server
+		for docId ,_ := range docList {
+			teammate, ok2 := c.docMap[docId]
+			if ok2 {
+				// Update all collaborators for relevant doc
+				for k , _ := range teammate {
+					if k != serverId {
+						err := c.sendRemoveDoc(k,serverId, docId)
+						if err != nil {
+							common.LOGE.Println("Gave up broadcast Dead server")
+							return
+						}
+					}
+				}
+			}
+			
+		}
+	} else {
+		common.LOGE.Println("Server ",serverId," does not exist")
 	}
 }
